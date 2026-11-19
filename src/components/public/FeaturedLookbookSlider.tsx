@@ -71,11 +71,11 @@ export function FeaturedLookbookSlider({ items, locale }: FeaturedLookbookSlider
       aria-label={isVi ? 'Tuyệt Tác Mẫu Móng Độc Quyền' : 'Featured Nail Art Creations'}
       onKeyDown={handleKeyDown}
       tabIndex={0}
-      className="lookbook w-full py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-white via-salon-50/40 to-white relative overflow-hidden focus:outline-none"
+      className="lookbook w-full py-6 sm:py-8 lg:py-10 bg-gradient-to-b from-white via-salon-50/40 to-white relative overflow-hidden focus:outline-none"
     >
       {/* Full-Screen Width Header Bar */}
-      <div className="w-full px-4 sm:px-8 lg:px-14 xl:px-20 pb-8 sm:pb-10">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 pb-5 border-b border-champagne-200/70">
+      <div className="w-full px-4 sm:px-8 lg:px-14 xl:px-20 pb-4 sm:pb-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-3.5 border-b border-champagne-200/70">
           <div className="space-y-2.5 max-w-3xl">
             <div className="inline-flex items-center gap-2 rounded-full bg-salon-100/80 border border-champagne-300 px-3.5 py-1 text-[11px] sm:text-xs text-salon-900 font-semibold tracking-wider uppercase shadow-xs">
               <Sparkles className="w-3.5 h-3.5 text-champagne-600 animate-spin-slow shrink-0" />
@@ -264,7 +264,7 @@ export function FeaturedLookbookSlider({ items, locale }: FeaturedLookbookSlider
 
       {/* Carousel Bottom Dot Indicators (Touch-friendly) */}
       {displayItems.length > 1 && (
-        <div className="w-full px-4 pt-6 flex items-center justify-center gap-2">
+        <div className="w-full px-4 pt-3.5 flex items-center justify-center gap-2">
           {displayItems.map((_, dotIdx) => (
             <button
               key={dotIdx}

@@ -42,7 +42,7 @@ export function AlternatingShowcase({
   const isEn = locale === 'en';
 
   return (
-    <section className="alternating-showcase w-full overflow-hidden py-16 sm:py-24 space-y-16 bg-gradient-to-b from-white via-salon-50/40 to-white">
+    <section className="alternating-showcase w-full overflow-hidden py-8 sm:py-12 space-y-12 bg-gradient-to-b from-white via-salon-50/40 to-white">
       {/* Section Header */}
       {(headingTitle || headingBadge) && (
         <div className="w-full px-4 sm:px-8 lg:px-16 2xl:px-24">

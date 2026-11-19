@@ -159,7 +159,7 @@ export default async function HomePage({
   ];
 
   return (
-    <div className="w-full space-y-16 sm:space-y-24 pb-24 overflow-x-hidden">
+    <div className="w-full pb-16 sm:pb-20 overflow-x-hidden">
       {/* Emergency Holiday Notice if active */}
       {business.holidayNoticeActive && (
         <div className="holiday-notice-banner w-full bg-amber-50 border-b border-amber-200 px-4 py-3.5 text-center text-amber-900 text-sm font-semibold flex items-center justify-center gap-2 shadow-xs">
@@ -288,7 +288,7 @@ export default async function HomePage({
       />
 
       {/* Featured Services Section (Full Width Grid) */}
-      <section className="w-full px-4 sm:px-8 lg:px-16 2xl:px-24">
+      <section className="w-full px-4 sm:px-8 lg:px-16 2xl:px-24 py-10 sm:py-14">
         <div className="text-center max-w-3xl mx-auto mb-14 space-y-3">
           <span className="text-xs font-bold tracking-widest text-salon-700 uppercase block">
             {isEn ? 'Signature Services' : 'Dịch Vụ Tiêu Biểu'}
@@ -461,7 +461,7 @@ export default async function HomePage({
       </section>
 
       {/* Full-Bleed Contact & Hours Sanctuary Card */}
-      <section className="w-full px-4 sm:px-8 lg:px-16 2xl:px-24">
+      <section className="w-full px-4 sm:px-8 lg:px-16 2xl:px-24 pt-10 sm:pt-14">
         <div className="rounded-3xl bg-white border border-champagne-200/80 p-8 sm:p-12 lg:p-14 shadow-md grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
           <div className="space-y-3">
             <span className="text-xs font-bold uppercase tracking-wider text-salon-700 block">
