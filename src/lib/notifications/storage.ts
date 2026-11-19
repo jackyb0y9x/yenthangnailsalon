@@ -7,6 +7,8 @@
 import fs from 'fs';
 import path from 'path';
 import { getSupabaseSafe, FALLBACK_BUSINESS_INFO } from '@/lib/cms/public-data';
+import { getSupabaseAdminSafe } from '@/lib/supabase/admin';
+import { getWritableDataDir } from '@/lib/utils/storage-path';
 
 export interface NotificationConfig {
   telegram_enabled: boolean;
@@ -18,7 +20,7 @@ export interface NotificationConfig {
   instagram_webhook_url: string;
 }
 
-const STORAGE_DIR = path.join(process.cwd(), '.data');
+const STORAGE_DIR = getWritableDataDir();
 const STORAGE_FILE = path.join(STORAGE_DIR, 'notifications.json');
 
 export function getFileStoredNotifications(): Partial<NotificationConfig> | null {
@@ -148,9 +150,9 @@ export async function saveEffectiveNotificationConfig(config: NotificationConfig
     (FALLBACK_BUSINESS_INFO.socialLinks as any).instagram = config.instagram_profile_url;
   }
 
-  // 4. Best-effort Supabase write
+  // 4. Persistent Supabase write via admin client
   try {
-    const supabase = await getSupabaseSafe();
+    const supabase = await getSupabaseAdminSafe();
     const { data: existing } = await supabase.from('nail_business_info').select('*').limit(1).maybeSingle();
     const updatedSocial = {
       ...(existing?.social_links || {}),

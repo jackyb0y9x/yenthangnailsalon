@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { getWritableDataDir } from '@/lib/utils/storage-path';
 
 export interface StoredConsultation {
   id: string;
@@ -16,7 +17,7 @@ export interface StoredConsultation {
   created_at: string;
 }
 
-const DATA_DIR = path.join(process.cwd(), '.data');
+const DATA_DIR = getWritableDataDir();
 const CONSULTATIONS_FILE = path.join(DATA_DIR, 'consultations.json');
 
 export function loadStoredConsultations(): StoredConsultation[] {

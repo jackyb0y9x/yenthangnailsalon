@@ -8,6 +8,9 @@ import { generateLocalizedMetadata } from '@/lib/seo/metadata';
 import { ConsultationForm } from '@/components/public/ConsultationForm';
 import { SocialIconLinks } from '@/components/public/SocialIcons';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function generateMetadata({
   params,
 }: {
@@ -74,7 +77,11 @@ export default async function ContactPage({
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-salon-700 shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-gray-900">{dict.common.address}</p>
+                  <p className="font-semibold text-gray-900">
+                    {business.streetAddress
+                      ? `${business.streetAddress}, ${business.suburb} ${business.state} ${business.postcode}`
+                      : dict.common.address}
+                  </p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     Opposite Wynyard Station / George St Light Rail
                   </p>
@@ -86,10 +93,10 @@ export default async function ContactPage({
                 <div>
                   <p className="text-xs text-gray-500">Telephone (Landline)</p>
                   <a
-                    href="tel:+61291234567"
+                    href={`tel:${(business.phone || '+61 2 9123 4567').replace(/[^+\d]/g, '')}`}
                     className="font-bold text-salon-950 hover:underline font-mono"
                   >
-                    +61 2 9123 4567
+                    {business.phone || '+61 2 9123 4567'}
                   </a>
                 </div>
               </div>
@@ -99,10 +106,10 @@ export default async function ContactPage({
                 <div>
                   <p className="text-xs text-gray-500">Australian Mobile / SMS</p>
                   <a
-                    href="tel:+61412345678"
+                    href={`tel:${(business.mobile || '0412 345 678').replace(/[^+\d]/g, '')}`}
                     className="font-bold text-salon-950 hover:underline font-mono"
                   >
-                    0412 345 678
+                    {business.mobile || '0412 345 678'}
                   </a>
                 </div>
               </div>
@@ -125,7 +132,7 @@ export default async function ContactPage({
             <div className="pt-4 border-t border-gray-100 space-y-4">
               <div className="flex items-center gap-2 rounded-xl bg-salon-50/70 border border-salon-100 p-3 text-xs text-salon-900 font-mono">
                 <ShieldCheck className="w-4 h-4 text-salon-700 shrink-0" />
-                <span>ABN: 51 824 753 556</span>
+                <span>ABN: {business.abn || '51 824 753 556'}</span>
               </div>
 
               {(business.facebookUrl || business.instagramUrl || business.socialLinks?.facebook || business.socialLinks?.instagram) && (

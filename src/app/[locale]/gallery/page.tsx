@@ -7,6 +7,9 @@ import { getPublicGallery } from '@/lib/cms/public-data';
 import { generateLocalizedMetadata } from '@/lib/seo/metadata';
 import { GalleryClient } from './GalleryClient';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function generateMetadata({
   params,
 }: {

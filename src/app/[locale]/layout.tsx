@@ -1,6 +1,6 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { isValidLocale, LOCALES, type Locale } from '@/lib/i18n/config';
+import { isValidLocale, type Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { getPublicBusinessInfo, getPublicAnnouncements } from '@/lib/cms/public-data';
 import { Header } from '@/components/public/Header';
@@ -8,9 +8,8 @@ import { Footer } from '@/components/public/Footer';
 import { FloatingSocialDock } from '@/components/public/SocialIcons';
 import { LocalBusinessJsonLd } from '@/components/seo/LocalBusinessJsonLd';
 
-export function generateStaticParams() {
-  return LOCALES.map((locale) => ({ locale }));
-}
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface LocaleLayoutProps {
   children: React.ReactNode;

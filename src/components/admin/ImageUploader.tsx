@@ -12,6 +12,58 @@ interface ImageUploaderProps {
   className?: string;
 }
 
+async function optimizeImageForUpload(file: File): Promise<File> {
+  // Keep already-compact files untouched for instant upload
+  if (file.size <= 350 * 1024 || typeof window === 'undefined') {
+    return file;
+  }
+
+  try {
+    const objectUrl = URL.createObjectURL(file);
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = objectUrl;
+      });
+
+      const MAX_DIM = 1600;
+      let width = img.naturalWidth || img.width;
+      let height = img.naturalHeight || img.height;
+
+      if (width > MAX_DIM || height > MAX_DIM) {
+        const scale = MAX_DIM / Math.max(width, height);
+        width = Math.max(1, Math.round(width * scale));
+        height = Math.max(1, Math.round(height * scale));
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return file;
+
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const targetMime = file.type === 'image/png' ? 'image/webp' : 'image/webp';
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), targetMime, 0.82)
+      );
+
+      if (blob && blob.size > 0 && blob.size < file.size) {
+        const baseName = file.name.replace(/\.[^/.]+$/, '');
+        return new File([blob], `${baseName}.webp`, { type: blob.type || 'image/webp' });
+      }
+      return file;
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  } catch {
+    return file;
+  }
+}
+
 export function ImageUploader({
   bucket = 'salon_cms',
   currentImageUrl = '',
@@ -65,8 +117,9 @@ export function ImageUploader({
     }, 40);
 
     try {
+      const uploadableFile = await optimizeImageForUpload(file);
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', uploadableFile);
       formData.append('bucket', bucket);
 
       const res = await fetch('/api/admin/upload', {

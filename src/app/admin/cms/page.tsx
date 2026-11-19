@@ -73,6 +73,11 @@ function AdminCmsPortalContent() {
     null
   );
   const [loading, setLoading] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<{
+    hasAdminKey: boolean;
+    isLiveSupabase: boolean;
+    isServerless: boolean;
+  } | null>(null);
 
   // Tab 1: Hero State
   const [heroData, setHeroData] = useState({
@@ -262,7 +267,7 @@ function AdminCmsPortalContent() {
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setFeedback({ type, message });
-    setTimeout(() => setFeedback(null), 4500);
+    setTimeout(() => setFeedback(null), type === 'error' ? 9000 : 4500);
   };
 
   // Load Initial Data
@@ -302,6 +307,7 @@ function AdminCmsPortalContent() {
       if (bizRes.ok) {
         const d = await bizRes.json();
         if (d.businessInfo) setBusinessData((prev) => ({ ...prev, ...d.businessInfo }));
+        if (d.syncStatus) setSyncStatus(d.syncStatus);
       }
       if (notifRes.ok) {
         const d = await notifRes.json();
@@ -700,6 +706,25 @@ function AdminCmsPortalContent() {
           <span>{locale === 'vi' ? 'Làm Mới Dữ Liệu' : 'Refresh Data'}</span>
         </button>
       </div>
+
+      {/* Supabase Database Sync Diagnostic Banner */}
+      {syncStatus && syncStatus.isLiveSupabase && !syncStatus.hasAdminKey && (
+        <div className="p-4 rounded-xl border bg-amber-950/50 border-amber-700/80 text-amber-100 flex items-start gap-3 text-xs leading-relaxed">
+          <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-semibold text-amber-200">
+              {locale === 'vi'
+                ? 'Thiếu biến môi trường SUPABASE_SERVICE_ROLE_KEY — Chưa thể lưu trực tiếp lên Supabase DB'
+                : 'Missing SUPABASE_SERVICE_ROLE_KEY — Supabase DB writes are currently blocked by RLS'}
+            </p>
+            <p className="text-amber-100/90">
+              {locale === 'vi'
+                ? 'Để dữ liệu CMS (Thông tin tiệm, Thương hiệu, Logo, MXH, Bản đồ, Câu chuyện...) đồng bộ 100% giữa Local và Vercel, hãy lấy khóa service_role (hoặc Secret Key) trong Supabase Dashboard → Project Settings → API, sau đó thêm biến SUPABASE_SERVICE_ROLE_KEY vào cả file .env.local lẫn Vercel → Settings → Environment Variables và Redeploy.'
+                : 'To sync CMS edits consistently across Local and Vercel, copy your service_role / Secret Key from Supabase Dashboard → Project Settings → API, add SUPABASE_SERVICE_ROLE_KEY to .env.local and Vercel Environment Variables, then Redeploy.'}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Global Notification */}
       {feedback && (

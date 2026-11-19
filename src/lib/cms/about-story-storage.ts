@@ -6,6 +6,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { getWritableDataDir } from '@/lib/utils/storage-path';
 
 export interface AboutStoryConfig {
   badge_en: string;
@@ -71,7 +72,7 @@ export const DEFAULT_ABOUT_STORY: AboutStoryConfig = {
   stat2_label_vi: 'Khách Hàng Hài Lòng',
 };
 
-const STORAGE_DIR = path.join(process.cwd(), '.data');
+const STORAGE_DIR = getWritableDataDir();
 const STORAGE_FILE = path.join(STORAGE_DIR, 'about-story.json');
 
 function isTestEnv(): boolean {
@@ -82,6 +83,10 @@ export function isSafeStoryImageUrl(url: string): boolean {
   const trimmed = url.trim();
   if (!trimmed) return true;
   if (trimmed.startsWith('/')) return !trimmed.startsWith('//');
+  // Allow safe raster base64 data URIs (for serverless inline fallback) while rejecting SVG/HTML XSS
+  if (/^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/i.test(trimmed)) {
+    return true;
+  }
   try {
     const parsed = new URL(trimmed);
     return parsed.protocol === 'http:' || parsed.protocol === 'https:';

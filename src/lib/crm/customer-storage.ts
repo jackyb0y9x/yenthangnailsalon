@@ -6,6 +6,7 @@
 import fs from 'fs';
 import path from 'path';
 import type { MockCustomer } from './mock-customers';
+import { getWritableDataDir } from '@/lib/utils/storage-path';
 
 export interface StoredCustomerPayload {
   overrides: Record<string, MockCustomer>;
@@ -13,7 +14,7 @@ export interface StoredCustomerPayload {
   deletedIds: string[];
 }
 
-const STORAGE_DIR = path.join(process.cwd(), '.data');
+const STORAGE_DIR = getWritableDataDir();
 const STORAGE_FILE = path.join(STORAGE_DIR, 'customers.json');
 
 export function getStoredCustomerData(): StoredCustomerPayload {

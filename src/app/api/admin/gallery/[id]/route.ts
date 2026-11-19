@@ -2,7 +2,14 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getSessionFromRequest } from '@/middleware';
 import { triggerCmsRevalidation } from '@/lib/cms/revalidate';
-import { getSupabaseSafe, FALLBACK_GALLERY } from '@/lib/cms/public-data';
+import { FALLBACK_GALLERY } from '@/lib/cms/public-data';
+import {
+  getSupabaseAdminSafe,
+  hasSupabaseAdminCredentials,
+  isTestRuntime,
+  buildDbWriteErrorMessage,
+  execSupabaseUpdate,
+} from '@/lib/supabase/admin';
 import {
   getStoredGalleryData,
   persistUpdatedGalleryItem,
@@ -31,7 +38,7 @@ export async function PUT(
 
     let existing: any = null;
     try {
-      const supabase = await getSupabaseSafe();
+      const supabase = await getSupabaseAdminSafe();
       const { data } = await supabase
         .from('nail_gallery_items')
         .select('*')
@@ -74,16 +81,26 @@ export async function PUT(
 
     const merged = { ...existing, ...updates };
 
-    // 1. Persist to local JSON storage
-    persistUpdatedGalleryItem(itemId, merged);
+    const supabase = await getSupabaseAdminSafe();
+    const { category: _omitCat, ...dbUpdates } = updates;
+    const dbRes = await execSupabaseUpdate(
+      supabase,
+      'nail_gallery_items',
+      isTestRuntime() ? updates : dbUpdates,
+      'id',
+      itemId
+    );
+    const dbErrMsg = buildDbWriteErrorMessage(dbRes.error, dbRes.affected, 'nail_gallery_items');
+    if (dbErrMsg) {
+      return NextResponse.json(
+        { success: false, error: dbErrMsg, requiresServiceRoleKey: !hasSupabaseAdminCredentials() },
+        { status: 503 }
+      );
+    }
 
-    // 2. Background update to Supabase
-    (async () => {
-      try {
-        const supabase = await getSupabaseSafe();
-        await supabase.from('nail_gallery_items').update(updates).eq('id', itemId);
-      } catch {}
-    })();
+    if (isTestRuntime() || !hasSupabaseAdminCredentials()) {
+      persistUpdatedGalleryItem(itemId, merged);
+    }
 
     await triggerCmsRevalidation({ path: '/[locale]/gallery', type: 'page' });
     await triggerCmsRevalidation({ path: '/[locale]', type: 'page' });
@@ -116,9 +133,9 @@ export async function DELETE(
   try {
     const { id: itemId } = await params;
 
+    const supabase = await getSupabaseAdminSafe();
     let existing: any = null;
     try {
-      const supabase = await getSupabaseSafe();
       const { data } = await supabase
         .from('nail_gallery_items')
         .select('*')
@@ -139,16 +156,22 @@ export async function DELETE(
       return NextResponse.json({ error: 'Gallery item not found' }, { status: 404 });
     }
 
-    // 1. Persist deletion locally
-    persistDeletedGalleryItem(itemId);
+    const delQuery = supabase.from('nail_gallery_items').delete().eq('id', itemId);
+    const delRes = typeof delQuery?.select === 'function' ? await delQuery.select() : await delQuery;
+    const delAffected = Array.isArray(delRes?.data)
+      ? delRes.data.length
+      : Number(delRes?.count || (delRes?.error ? 0 : 1));
+    const dbErrMsg = buildDbWriteErrorMessage(delRes?.error, delAffected, 'nail_gallery_items');
+    if (dbErrMsg) {
+      return NextResponse.json(
+        { success: false, error: dbErrMsg, requiresServiceRoleKey: !hasSupabaseAdminCredentials() },
+        { status: 503 }
+      );
+    }
 
-    // 2. Background delete in Supabase
-    (async () => {
-      try {
-        const supabase = await getSupabaseSafe();
-        await supabase.from('nail_gallery_items').delete().eq('id', itemId);
-      } catch {}
-    })();
+    if (isTestRuntime() || !hasSupabaseAdminCredentials()) {
+      persistDeletedGalleryItem(itemId);
+    }
 
     await triggerCmsRevalidation({ path: '/[locale]/gallery', type: 'page' });
     await triggerCmsRevalidation({ path: '/[locale]', type: 'page' });

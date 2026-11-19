@@ -2,7 +2,14 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getSessionFromRequest } from '@/middleware';
 import { triggerCmsRevalidation } from '@/lib/cms/revalidate';
-import { getSupabaseSafe, getPublicAboutStory } from '@/lib/cms/public-data';
+import { getPublicAboutStory } from '@/lib/cms/public-data';
+import {
+  getSupabaseAdminSafe,
+  hasSupabaseAdminCredentials,
+  buildDbWriteErrorMessage,
+  execSupabaseUpdate,
+  execSupabaseInsert,
+} from '@/lib/supabase/admin';
 import {
   saveStoredAboutStory,
   resetStoredAboutStory,
@@ -38,41 +45,34 @@ const ALLOWED_FIELDS: Array<keyof AboutStoryConfig> = [
   'stat2_label_vi',
 ];
 
-async function syncAboutStoryToSupabase(story: AboutStoryConfig) {
-  try {
-    const supabase = await getSupabaseSafe();
-    const { data: existing } = await supabase
-      .from('nail_cms_sections')
-      .select('*')
-      .eq('section_key', 'about_story')
-      .maybeSingle();
+async function syncAboutStoryToSupabase(story: AboutStoryConfig): Promise<string | null> {
+  const supabase = await getSupabaseAdminSafe();
+  const { data: existing } = await supabase
+    .from('nail_cms_sections')
+    .select('*')
+    .eq('section_key', 'about_story')
+    .maybeSingle();
 
-    const payload: Record<string, any> = {
-      section_key: 'about_story',
-      title_en: story.story_title_en,
-      title_vi: story.story_title_vi,
-      subtitle_en: story.page_subtitle_en,
-      subtitle_vi: story.page_subtitle_vi,
-      image_url: story.image_url,
-      metadata: story,
-      updated_at: story.updated_at || new Date().toISOString(),
-    };
+  const payload: Record<string, any> = {
+    section_key: 'about_story',
+    title_en: story.story_title_en || 'The Glamour Nails Story',
+    title_vi: story.story_title_vi || 'Câu Chuyện Glamour Nails',
+    subtitle_en: story.page_subtitle_en,
+    subtitle_vi: story.page_subtitle_vi,
+    image_url: story.image_url,
+    metadata: story,
+    updated_at: story.updated_at || new Date().toISOString(),
+  };
 
-    if (existing) {
-      await supabase
-        .from('nail_cms_sections')
-        .update(payload)
-        .eq('section_key', 'about_story');
-    } else {
-      await supabase.from('nail_cms_sections').insert({
+  const dbRes = existing
+    ? await execSupabaseUpdate(supabase, 'nail_cms_sections', payload, 'section_key', 'about_story')
+    : await execSupabaseInsert(supabase, 'nail_cms_sections', {
         ...payload,
         is_active: true,
         display_order: 2,
       });
-    }
-  } catch {
-    // Non-blocking best-effort sync; local storage already persisted the update
-  }
+
+  return buildDbWriteErrorMessage(dbRes.error, dbRes.affected, 'nail_cms_sections');
 }
 
 export async function GET(request: NextRequest) {
@@ -116,7 +116,13 @@ export async function POST(request: NextRequest) {
 
     if (body?.reset === true) {
       const resetStory = resetStoredAboutStory();
-      void syncAboutStoryToSupabase(resetStory);
+      const dbErrMsg = await syncAboutStoryToSupabase(resetStory);
+      if (dbErrMsg) {
+        return NextResponse.json(
+          { success: false, error: dbErrMsg, requiresServiceRoleKey: !hasSupabaseAdminCredentials() },
+          { status: 503 }
+        );
+      }
       await triggerCmsRevalidation({ path: '/[locale]/about', type: 'page' });
       return NextResponse.json({
         success: true,
@@ -150,11 +156,12 @@ export async function POST(request: NextRequest) {
           );
         }
         const trimmed = body[field].trim();
-        if (trimmed.length > 5000) {
+        const maxLen = field === 'image_url' ? 2_000_000 : 5000;
+        if (trimmed.length > maxLen) {
           return NextResponse.json(
             {
               success: false,
-              error: `Field "${field}" exceeds maximum length of 5000 characters.`,
+              error: `Field "${field}" exceeds maximum length of ${maxLen} characters.`,
             },
             { status: 400 }
           );
@@ -165,8 +172,13 @@ export async function POST(request: NextRequest) {
 
     const saved = saveStoredAboutStory(updates);
 
-    // Non-blocking background Supabase sync
-    void syncAboutStoryToSupabase(saved);
+    const dbErrMsg = await syncAboutStoryToSupabase(saved);
+    if (dbErrMsg) {
+      return NextResponse.json(
+        { success: false, error: dbErrMsg, requiresServiceRoleKey: !hasSupabaseAdminCredentials() },
+        { status: 503 }
+      );
+    }
 
     // Instant revalidation for /en/about and /vi/about
     await triggerCmsRevalidation({ path: '/[locale]/about', type: 'page' });

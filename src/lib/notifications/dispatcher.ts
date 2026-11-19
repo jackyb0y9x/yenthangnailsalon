@@ -186,6 +186,11 @@ export async function dispatchConsultationAlerts(
 }> {
   const results: { telegram?: TelegramSendResult; instagram?: WebhookSendResult } = {};
 
+  // Prevent automated Vitest suites from firing real outbound Telegram/Webhook requests
+  if (process.env.VITEST && !(globalThis.fetch as any)?.mock) {
+    return results;
+  }
+
   try {
     const config = await getEffectiveNotificationConfig();
 

@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getSessionFromRequest } from '@/middleware';
 import { triggerCmsRevalidation } from '@/lib/cms/revalidate';
-import { getSupabaseSafe } from '@/lib/cms/public-data';
+import {
+  getSupabaseAdminSafe,
+  hasSupabaseAdminCredentials,
+  buildDbWriteErrorMessage,
+  execSupabaseUpdate,
+  execSupabaseInsert,
+} from '@/lib/supabase/admin';
 
 export async function GET(request: NextRequest) {
   const session = getSessionFromRequest(request);
@@ -14,7 +20,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const supabase = await getSupabaseSafe();
+    const supabase = await getSupabaseAdminSafe();
     const { data } = await supabase.from('nail_business_info').select('*').limit(1).maybeSingle();
 
     const holidayData = data?.holiday_closures || data?.opening_hours?.holiday_closures || {};
@@ -52,7 +58,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const supabase = await getSupabaseSafe();
+    const supabase = await getSupabaseAdminSafe();
     const { data: existing } = await supabase.from('nail_business_info').select('*').limit(1).maybeSingle();
 
     const currentOpeningHours = existing?.opening_hours || {};
@@ -81,10 +87,16 @@ export async function POST(request: NextRequest) {
     if (holiday_notice_en !== undefined) updatePayload.holiday_notice_en = holiday_notice_en;
     if (holiday_notice_vi !== undefined) updatePayload.holiday_notice_vi = holiday_notice_vi;
 
-    if (existing) {
-      await supabase.from('nail_business_info').update(updatePayload).eq('id', existing.id);
-    } else {
-      await supabase.from('nail_business_info').insert(updatePayload);
+    const dbRes = existing
+      ? await execSupabaseUpdate(supabase, 'nail_business_info', updatePayload, 'id', existing.id)
+      : await execSupabaseInsert(supabase, 'nail_business_info', updatePayload);
+
+    const dbErrMsg = buildDbWriteErrorMessage(dbRes.error, dbRes.affected, 'nail_business_info');
+    if (dbErrMsg) {
+      return NextResponse.json(
+        { success: false, error: dbErrMsg, requiresServiceRoleKey: !hasSupabaseAdminCredentials() },
+        { status: 503 }
+      );
     }
 
     await triggerCmsRevalidation();

@@ -6,6 +6,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { getWritableDataDir } from '@/lib/utils/storage-path';
 
 export interface BrandingConfig {
   website_title: string;
@@ -27,7 +28,7 @@ export const DEFAULT_BRANDING: BrandingConfig = {
   instagram_url: 'https://instagram.com/glamournails.sydney',
 };
 
-const STORAGE_DIR = path.join(process.cwd(), '.data');
+const STORAGE_DIR = getWritableDataDir();
 const STORAGE_FILE = path.join(STORAGE_DIR, 'branding.json');
 
 function isTestEnv(): boolean {

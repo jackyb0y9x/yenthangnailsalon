@@ -5,6 +5,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { getWritableDataDir } from '@/lib/utils/storage-path';
 
 export interface GalleryItemRecord {
   id: string;
@@ -27,7 +28,7 @@ export interface StoredGalleryPayload {
   deletedIds: string[];
 }
 
-const STORAGE_DIR = path.join(process.cwd(), '.data');
+const STORAGE_DIR = getWritableDataDir();
 const STORAGE_FILE = path.join(STORAGE_DIR, 'gallery.json');
 
 export function getStoredGalleryData(): StoredGalleryPayload {

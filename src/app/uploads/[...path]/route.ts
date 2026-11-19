@@ -2,8 +2,28 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { getTmpUploadsDir } from '@/lib/utils/storage-path';
 
 export const dynamic = 'force-dynamic';
+
+function findSafeUploadedFile(segments: string[]): string | 'FORBIDDEN' | null {
+  const candidateRoots = [
+    path.resolve(process.cwd(), 'public', 'uploads'),
+    path.resolve(getTmpUploadsDir()),
+  ];
+
+  for (const root of candidateRoots) {
+    const resolved = path.resolve(root, ...segments);
+    if (!resolved.startsWith(root + path.sep) && resolved !== root) {
+      return 'FORBIDDEN';
+    }
+    if (fs.existsSync(resolved) && fs.statSync(resolved).isFile()) {
+      return resolved;
+    }
+  }
+
+  return null;
+}
 
 export async function GET(
   request: NextRequest,
@@ -15,15 +35,13 @@ export async function GET(
       return NextResponse.json({ error: 'Missing path parameter' }, { status: 400 });
     }
 
-    const uploadsRoot = path.resolve(process.cwd(), 'public', 'uploads');
-    const safeFilePath = path.resolve(uploadsRoot, ...segments);
+    const safeFilePath = findSafeUploadedFile(segments);
 
-    // Path traversal defense
-    if (!safeFilePath.startsWith(uploadsRoot)) {
+    if (safeFilePath === 'FORBIDDEN') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    if (!fs.existsSync(safeFilePath) || !fs.statSync(safeFilePath).isFile()) {
+    if (!safeFilePath) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 
@@ -49,7 +67,7 @@ export async function GET(
         'X-Content-Type-Options': 'nosniff',
       },
     });
-  } catch (err: any) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

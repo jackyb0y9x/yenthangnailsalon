@@ -6,6 +6,7 @@
 import fs from 'fs';
 import path from 'path';
 import type { StaffRecord } from './staff-data';
+import { getWritableDataDir } from '@/lib/utils/storage-path';
 
 export interface StoredStaffPayload {
   overrides: Record<string, StaffRecord>;
@@ -13,7 +14,7 @@ export interface StoredStaffPayload {
   deletedIds: string[];
 }
 
-const STORAGE_DIR = path.join(process.cwd(), '.data');
+const STORAGE_DIR = getWritableDataDir();
 const STORAGE_FILE = path.join(STORAGE_DIR, 'staff.json');
 
 export function getStoredStaffData(): StoredStaffPayload {

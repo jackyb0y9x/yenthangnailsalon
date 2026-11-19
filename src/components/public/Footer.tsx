@@ -29,6 +29,14 @@ export function Footer({ locale, dict, holidayNoticeActive = false, businessInfo
   const logoUrl = businessInfo?.logoUrl;
   const facebookUrl = businessInfo?.facebookUrl ?? businessInfo?.socialLinks?.facebook ?? '';
   const instagramUrl = businessInfo?.instagramUrl ?? businessInfo?.socialLinks?.instagram ?? '';
+  const displayAbn = businessInfo?.abn || '51 824 753 556';
+  const displayPhone = businessInfo?.phone || '+61 2 9123 4567';
+  const displayMobile = businessInfo?.mobile || '0412 345 678';
+  const displayAddress = businessInfo?.streetAddress
+    ? `${businessInfo.streetAddress}, ${businessInfo.suburb} ${businessInfo.state} ${businessInfo.postcode}`
+    : dict.common.address;
+  const phoneHref = `tel:${displayPhone.replace(/[^+\d]/g, '')}`;
+  const mobileHref = `tel:${displayMobile.replace(/[^+\d]/g, '')}`;
 
   return (
     <footer className="bg-salon-950 text-gray-300 pt-16 pb-20 sm:pb-12 border-t border-salon-900 font-sans">
@@ -57,7 +65,7 @@ export function Footer({ locale, dict, holidayNoticeActive = false, businessInfo
             <div className="pt-2 space-y-3">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-salon-900/80 border border-salon-800 px-3 py-1 text-xs text-champagne-300 font-mono">
                 <ShieldCheck className="w-3.5 h-3.5 text-champagne-400" />
-                ABN: 51 824 753 556
+                ABN: {displayAbn}
               </span>
               {(facebookUrl || instagramUrl) && (
                 <div className="pt-1">
@@ -142,7 +150,7 @@ export function Footer({ locale, dict, holidayNoticeActive = false, businessInfo
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-champagne-300 shrink-0 mt-0.5" />
                 <p>
-                  Address: {dict.common.address}
+                  Address: {displayAddress}
                 </p>
               </div>
               <div className="flex items-center gap-2.5">
@@ -150,10 +158,10 @@ export function Footer({ locale, dict, holidayNoticeActive = false, businessInfo
                 <p>
                   Phone:{' '}
                   <a
-                    href="tel:+61291234567"
+                    href={phoneHref}
                     className="hover:text-champagne-300 underline font-medium"
                   >
-                    +61 2 9123 4567
+                    {displayPhone}
                   </a>
                 </p>
               </div>
@@ -162,15 +170,15 @@ export function Footer({ locale, dict, holidayNoticeActive = false, businessInfo
                 <p>
                   Mobile:{' '}
                   <a
-                    href="tel:+61412345678"
+                    href={mobileHref}
                     className="hover:text-champagne-300 underline font-medium"
                   >
-                    0412 345 678
+                    {displayMobile}
                   </a>
                 </p>
               </div>
               <p className="text-xs text-gray-400 pt-1 font-mono">
-                ABN: 51 824 753 556
+                ABN: {displayAbn}
               </p>
               {holidayNoticeActive && (
                 <div className="holiday-alert mt-2 p-2.5 rounded-lg bg-amber-950/80 border border-amber-800 text-amber-200 text-xs">

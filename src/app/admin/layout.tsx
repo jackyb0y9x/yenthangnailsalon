@@ -45,7 +45,7 @@ export default async function AdminLayout({
           <AdminNav role={role} userEmail={email} />
         </React.Suspense>
         <main className="flex-1 bg-slate-950 min-h-screen overflow-y-auto">
-          <AdminHeader />
+          <AdminHeader userEmail={email} role={role} />
           <div className="p-6 md:p-8 max-w-7xl mx-auto">{children}</div>
         </main>
       </div>

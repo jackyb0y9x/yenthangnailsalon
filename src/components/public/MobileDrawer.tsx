@@ -146,19 +146,29 @@ export function MobileDrawer({ isOpen, onClose, locale, dict, businessInfo }: Mo
           <div className="space-y-2 text-xs text-gray-600">
             <div className="flex items-center gap-2">
               <Phone className="w-4 h-4 text-salon-700 shrink-0" />
-              <a href="tel:+61291234567" className="hover:underline text-gray-800 font-medium">
-                {dict.common.phone}
+              <a
+                href={`tel:${(businessInfo?.phone || dict.common.phone).replace(/[^+\d]/g, '')}`}
+                className="hover:underline text-gray-800 font-medium"
+              >
+                {businessInfo?.phone || dict.common.phone}
               </a>
             </div>
             <div className="flex items-center gap-2">
               <Phone className="w-4 h-4 text-salon-700 shrink-0" />
-              <a href="tel:+61412345678" className="hover:underline text-gray-800 font-medium">
-                {dict.common.mobile}
+              <a
+                href={`tel:${(businessInfo?.mobile || dict.common.mobile).replace(/[^+\d]/g, '')}`}
+                className="hover:underline text-gray-800 font-medium"
+              >
+                {businessInfo?.mobile || dict.common.mobile}
               </a>
             </div>
             <div className="flex items-start gap-2">
               <MapPin className="w-4 h-4 text-salon-700 shrink-0 mt-0.5" />
-              <span>{dict.common.address}</span>
+              <span>
+                {businessInfo?.streetAddress
+                  ? `${businessInfo.streetAddress}, ${businessInfo.suburb} ${businessInfo.state} ${businessInfo.postcode}`
+                  : dict.common.address}
+              </span>
             </div>
           </div>
 

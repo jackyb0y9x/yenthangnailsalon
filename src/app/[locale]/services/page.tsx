@@ -7,6 +7,9 @@ import { getDictionary } from '@/lib/i18n/dictionaries';
 import { getPublicServices } from '@/lib/cms/public-data';
 import { generateLocalizedMetadata } from '@/lib/seo/metadata';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function generateMetadata({
   params,
 }: {

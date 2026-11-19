@@ -19,11 +19,13 @@ import {
   MapPin,
   Bell,
   BookOpen,
+  KeyRound,
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
 import { canAccessFinance } from '@/lib/auth/roles';
 import { useAdminLanguage } from '@/lib/i18n/AdminLanguageContext';
+import { ChangePasswordModal } from '@/components/admin/ChangePasswordModal';
 
 interface AdminNavProps {
   role?: string;
@@ -40,6 +42,7 @@ export function AdminNav({ role = 'manager', userEmail = '' }: AdminNavProps) {
   const currentTab = searchParams.get('tab') || 'hero';
   const isCmsPath = pathname === '/admin/cms' || pathname.startsWith('/admin/cms/');
   const [cmsExpanded, setCmsExpanded] = useState(true);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   const cmsSubItems = [
     {
@@ -278,8 +281,17 @@ export function AdminNav({ role = 'manager', userEmail = '' }: AdminNavProps) {
         })}
       </nav>
 
-      {/* Logout Action */}
-      <div className="p-4 border-t border-slate-800">
+      {/* Account Actions: Change Password & Sign Out */}
+      <div className="p-4 border-t border-slate-800 space-y-2">
+        <button
+          type="button"
+          onClick={() => setIsPasswordModalOpen(true)}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-champagne-300 hover:bg-slate-800 hover:text-champagne-200 transition-colors border border-slate-700/80"
+        >
+          <KeyRound className="w-4 h-4" />
+          <span>{locale === 'vi' ? 'Đổi Mật Khẩu' : 'Change Password'}</span>
+        </button>
+
         <button
           type="button"
           onClick={handleLogout}
@@ -289,6 +301,13 @@ export function AdminNav({ role = 'manager', userEmail = '' }: AdminNavProps) {
           <span>{t.nav.signOut}</span>
         </button>
       </div>
+
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+        userEmail={userEmail}
+        role={role}
+      />
     </aside>
   );
 }

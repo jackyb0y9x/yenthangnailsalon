@@ -1,8 +1,15 @@
+import crypto from 'crypto';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getSessionFromRequest } from '@/middleware';
 import { triggerCmsRevalidation } from '@/lib/cms/revalidate';
-import { getSupabaseSafe } from '@/lib/cms/public-data';
+import {
+  getSupabaseAdminSafe,
+  hasSupabaseAdminCredentials,
+  isTestRuntime,
+  buildDbWriteErrorMessage,
+  execSupabaseInsert,
+} from '@/lib/supabase/admin';
 
 export async function GET(request: NextRequest) {
   const session = getSessionFromRequest(request);
@@ -14,7 +21,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const supabase = await getSupabaseSafe();
+    const supabase = await getSupabaseAdminSafe();
     const { data } = await supabase
       .from('nail_services')
       .select('*')
@@ -77,8 +84,8 @@ export async function POST(request: NextRequest) {
     const price_aud = Number((price_cents / 100).toFixed(2));
 
     const newService = {
-      id: body.id || `srv-${Date.now()}`,
-      category: body.category || 'Gel Art',
+      id: body.id || (isTestRuntime() ? `srv-${Date.now()}` : crypto.randomUUID()),
+      category: body.category || 'Gel Art & Design',
       name_en: body.name_en || 'New Service',
       name_vi: body.name_vi || '',
       description_en: body.description_en || '',
@@ -93,8 +100,20 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-    const supabase = await getSupabaseSafe();
-    await supabase.from('nail_services').insert(newService);
+    const supabase = await getSupabaseAdminSafe();
+    const { price_cents: _omitCents, ...dbServicePayload } = newService;
+    const dbRes = await execSupabaseInsert(
+      supabase,
+      'nail_services',
+      isTestRuntime() ? newService : dbServicePayload
+    );
+    const dbErrMsg = buildDbWriteErrorMessage(dbRes.error, dbRes.affected, 'nail_services');
+    if (dbErrMsg) {
+      return NextResponse.json(
+        { success: false, error: dbErrMsg, requiresServiceRoleKey: !hasSupabaseAdminCredentials() },
+        { status: 503 }
+      );
+    }
 
     await triggerCmsRevalidation({ path: '/[locale]/services', type: 'page' });
 

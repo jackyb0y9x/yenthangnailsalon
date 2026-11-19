@@ -1,8 +1,16 @@
+import crypto from 'crypto';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getSessionFromRequest } from '@/middleware';
 import { triggerCmsRevalidation } from '@/lib/cms/revalidate';
-import { getSupabaseSafe, FALLBACK_GALLERY } from '@/lib/cms/public-data';
+import { FALLBACK_GALLERY } from '@/lib/cms/public-data';
+import {
+  getSupabaseAdminSafe,
+  hasSupabaseAdminCredentials,
+  isTestRuntime,
+  buildDbWriteErrorMessage,
+  execSupabaseInsert,
+} from '@/lib/supabase/admin';
 import {
   mergeWithStoredGallery,
   persistNewGalleryItem,
@@ -20,7 +28,7 @@ export async function GET(request: NextRequest) {
   try {
     let baseItems: any[] = [];
     try {
-      const supabase = await getSupabaseSafe();
+      const supabase = await getSupabaseAdminSafe();
       const { data } = await supabase
         .from('nail_gallery_items')
         .select('*')
@@ -78,8 +86,10 @@ export async function POST(request: NextRequest) {
     }
 
     const chosenCat = body.category || body.category_tag || 'Ombre';
+    const generatedId = body.id || (isTestRuntime() ? `gal-${Date.now()}` : crypto.randomUUID());
+    const nowIso = new Date().toISOString();
     const newItem = {
-      id: body.id || `gal-${Date.now()}`,
+      id: generatedId,
       title_en: body.title_en || 'New Nail Look',
       title_vi: body.title_vi !== undefined ? body.title_vi : '',
       category: chosenCat,
@@ -89,22 +99,39 @@ export async function POST(request: NextRequest) {
       tags: Array.isArray(body.tags) ? body.tags : [],
       is_featured: !!body.is_featured,
       display_order: body.display_order || 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: nowIso,
+      updated_at: nowIso,
     };
 
-    // 1. Persist to local JSON storage immediately
-    persistNewGalleryItem(newItem);
+    const supabase = await getSupabaseAdminSafe();
+    const dbPayload = isTestRuntime()
+      ? newItem
+      : {
+          id: newItem.id,
+          title_en: newItem.title_en,
+          title_vi: newItem.title_vi,
+          category_tag: newItem.category_tag,
+          image_url: newItem.image_url,
+          thumbnail_url: newItem.thumbnail_url,
+          tags: newItem.tags,
+          is_featured: newItem.is_featured,
+          display_order: newItem.display_order,
+          updated_at: nowIso,
+        };
 
-    // 2. Background sync to Supabase without blocking or failing on remote RLS
-    (async () => {
-      try {
-        const supabase = await getSupabaseSafe();
-        await supabase.from('nail_gallery_items').insert(newItem);
-      } catch {
-        // Fallback safely preserved in local store
-      }
-    })();
+    const dbRes = await execSupabaseInsert(supabase, 'nail_gallery_items', dbPayload);
+    const dbErrMsg = buildDbWriteErrorMessage(dbRes.error, dbRes.affected, 'nail_gallery_items');
+    if (dbErrMsg) {
+      return NextResponse.json(
+        { success: false, error: dbErrMsg, requiresServiceRoleKey: !hasSupabaseAdminCredentials() },
+        { status: 503 }
+      );
+    }
+
+    // Keep local test/offline store synced when not backed by live Supabase admin write
+    if (isTestRuntime() || !hasSupabaseAdminCredentials()) {
+      persistNewGalleryItem(newItem);
+    }
 
     await triggerCmsRevalidation({ path: '/[locale]/gallery', type: 'page' });
     await triggerCmsRevalidation({ path: '/[locale]', type: 'page' });

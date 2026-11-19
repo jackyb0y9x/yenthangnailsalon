@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getSessionFromRequest } from '@/middleware';
 import { triggerCmsRevalidation } from '@/lib/cms/revalidate';
-import { getSupabaseSafe } from '@/lib/cms/public-data';
+import {
+  getSupabaseAdminSafe,
+  hasSupabaseAdminCredentials,
+  isTestRuntime,
+  buildDbWriteErrorMessage,
+  execSupabaseUpdate,
+} from '@/lib/supabase/admin';
 
 export async function PUT(
   request: NextRequest,
@@ -24,7 +30,7 @@ export async function PUT(
     const { id: serviceId } = await params;
     const body = await request.json();
 
-    const supabase = await getSupabaseSafe();
+    const supabase = await getSupabaseAdminSafe();
     const { data: existing } = await supabase
       .from('nail_services')
       .select('*')
@@ -64,7 +70,21 @@ export async function PUT(
     if (body.is_active !== undefined) updates.is_active = Boolean(body.is_active);
     if (body.display_order !== undefined) updates.display_order = body.display_order;
 
-    await supabase.from('nail_services').update(updates).eq('id', serviceId);
+    const { price_cents: _omitCents, ...dbUpdates } = updates;
+    const dbRes = await execSupabaseUpdate(
+      supabase,
+      'nail_services',
+      isTestRuntime() ? updates : dbUpdates,
+      'id',
+      serviceId
+    );
+    const dbErrMsg = buildDbWriteErrorMessage(dbRes.error, dbRes.affected, 'nail_services');
+    if (dbErrMsg) {
+      return NextResponse.json(
+        { success: false, error: dbErrMsg, requiresServiceRoleKey: !hasSupabaseAdminCredentials() },
+        { status: 503 }
+      );
+    }
 
     await triggerCmsRevalidation({ path: '/[locale]/services', type: 'page' });
 
@@ -95,7 +115,7 @@ export async function DELETE(
 
   try {
     const { id: serviceId } = await params;
-    const supabase = await getSupabaseSafe();
+    const supabase = await getSupabaseAdminSafe();
 
     const { data: existing } = await supabase
       .from('nail_services')
@@ -108,7 +128,20 @@ export async function DELETE(
     }
 
     // Soft deletion: toggle is_active = false
-    await supabase.from('nail_services').update({ is_active: false, updated_at: new Date().toISOString() }).eq('id', serviceId);
+    const dbRes = await execSupabaseUpdate(
+      supabase,
+      'nail_services',
+      { is_active: false, updated_at: new Date().toISOString() },
+      'id',
+      serviceId
+    );
+    const dbErrMsg = buildDbWriteErrorMessage(dbRes.error, dbRes.affected, 'nail_services');
+    if (dbErrMsg) {
+      return NextResponse.json(
+        { success: false, error: dbErrMsg, requiresServiceRoleKey: !hasSupabaseAdminCredentials() },
+        { status: 503 }
+      );
+    }
 
     await triggerCmsRevalidation({ path: '/[locale]/services', type: 'page' });
 

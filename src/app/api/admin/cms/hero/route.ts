@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getSessionFromRequest } from '@/middleware';
 import { triggerCmsRevalidation } from '@/lib/cms/revalidate';
-import { getSupabaseSafe } from '@/lib/cms/public-data';
+import {
+  getSupabaseAdminSafe,
+  hasSupabaseAdminCredentials,
+  buildDbWriteErrorMessage,
+  execSupabaseUpdate,
+  execSupabaseInsert,
+} from '@/lib/supabase/admin';
 
 export async function GET(request: NextRequest) {
   const session = getSessionFromRequest(request);
@@ -14,7 +20,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const supabase = await getSupabaseSafe();
+    const supabase = await getSupabaseAdminSafe();
     const { data } = await supabase
       .from('nail_cms_sections')
       .select('*')
@@ -23,15 +29,26 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      hero: data || {
-        headline_en: 'Luxury Australian Nail Care',
-        headline_vi: 'Chăm Sóc Móng Cao Cấp Tại Sydney',
-        subheadline_en: 'Bespoke nail artistry, SNS dipping, and medical-grade hygiene in Sydney.',
-        subheadline_vi: 'Nghệ thuật làm móng tinh tế, nhúng bột SNS và chuẩn vệ sinh cao cấp tại Sydney.',
-        cta_text_en: 'Book Consultation',
-        cta_text_vi: 'Đặt Lịch Tư Vấn',
-        cta_link: '/contact',
-      },
+      hero: data
+        ? {
+            headline_en: data.title_en || 'Luxury Australian Nail Care',
+            headline_vi: data.title_vi || 'Chăm Sóc Móng Cao Cấp Tại Sydney',
+            subheadline_en: data.subtitle_en || '',
+            subheadline_vi: data.subtitle_vi || '',
+            cta_text_en: data.cta_text_en || 'Book Consultation',
+            cta_text_vi: data.cta_text_vi || 'Đặt Lịch Tư Vấn',
+            cta_link: data.cta_link || '/contact',
+            image_url: data.image_url || '',
+          }
+        : {
+            headline_en: 'Luxury Australian Nail Care',
+            headline_vi: 'Chăm Sóc Móng Cao Cấp Tại Sydney',
+            subheadline_en: 'Bespoke nail artistry, SNS dipping, and medical-grade hygiene in Sydney.',
+            subheadline_vi: 'Nghệ thuật làm móng tinh tế, nhúng bột SNS và chuẩn vệ sinh cao cấp tại Sydney.',
+            cta_text_en: 'Book Consultation',
+            cta_text_vi: 'Đặt Lịch Tư Vấn',
+            cta_link: '/contact',
+          },
     });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
@@ -63,7 +80,7 @@ export async function POST(request: NextRequest) {
     const cta_link = body.cta_link;
     const image_url = body.image_url;
 
-    const supabase = await getSupabaseSafe();
+    const supabase = await getSupabaseAdminSafe();
     const { data: existing } = await supabase
       .from('nail_cms_sections')
       .select('*')
@@ -84,14 +101,22 @@ export async function POST(request: NextRequest) {
     if (cta_link !== undefined) updatePayload.cta_link = cta_link;
     if (image_url !== undefined) updatePayload.image_url = image_url;
 
-    if (existing) {
-      await supabase.from('nail_cms_sections').update(updatePayload).eq('section_key', 'hero');
-    } else {
-      await supabase.from('nail_cms_sections').insert({
-        ...updatePayload,
-        is_active: true,
-        display_order: 1,
-      });
+    const dbRes = existing
+      ? await execSupabaseUpdate(supabase, 'nail_cms_sections', updatePayload, 'section_key', 'hero')
+      : await execSupabaseInsert(supabase, 'nail_cms_sections', {
+          ...updatePayload,
+          title_en: title_en ?? 'Luxury Australian Nail Care',
+          title_vi: title_vi ?? 'Chăm Sóc Móng Cao Cấp Tại Sydney',
+          is_active: true,
+          display_order: 1,
+        });
+
+    const dbErrMsg = buildDbWriteErrorMessage(dbRes.error, dbRes.affected, 'nail_cms_sections');
+    if (dbErrMsg) {
+      return NextResponse.json(
+        { success: false, error: dbErrMsg, requiresServiceRoleKey: !hasSupabaseAdminCredentials() },
+        { status: 503 }
+      );
     }
 
     // Trigger instant cache revalidation

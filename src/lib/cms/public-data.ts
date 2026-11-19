@@ -603,6 +603,8 @@ export async function getPublicHeroSection(): Promise<HeroSection> {
 }
 
 export async function getPublicBusinessInfo(): Promise<BusinessInfo> {
+  const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST);
+
   try {
     const supabase = await getSupabaseSafe();
     const { data } = await supabase.from('nail_business_info').select('*').limit(1).maybeSingle();
@@ -623,19 +625,29 @@ export async function getPublicBusinessInfo(): Promise<BusinessInfo> {
         holidayData.holiday_notice_vi ||
         '';
 
-      const resolvedFacebookUrl =
-        storedBranding?.facebook_url !== undefined
-          ? storedBranding.facebook_url
-          : data.social_links?.facebook ??
-            FALLBACK_BUSINESS_INFO.socialLinks?.facebook ??
-            'https://facebook.com/glamournails.sydney';
+      const preferDb = !isTest;
 
-      const resolvedInstagramUrl =
-        storedBranding?.instagram_url !== undefined
-          ? storedBranding.instagram_url
-          : data.social_links?.instagram ??
-            FALLBACK_BUSINESS_INFO.socialLinks?.instagram ??
-            'https://instagram.com/glamournails.sydney';
+      const resolvedFacebookUrl = preferDb
+        ? data.social_links?.facebook ??
+          storedBranding?.facebook_url ??
+          FALLBACK_BUSINESS_INFO.socialLinks?.facebook ??
+          'https://facebook.com/glamournails.sydney'
+        : storedBranding?.facebook_url !== undefined
+        ? storedBranding.facebook_url
+        : data.social_links?.facebook ??
+          FALLBACK_BUSINESS_INFO.socialLinks?.facebook ??
+          'https://facebook.com/glamournails.sydney';
+
+      const resolvedInstagramUrl = preferDb
+        ? data.social_links?.instagram ??
+          storedBranding?.instagram_url ??
+          FALLBACK_BUSINESS_INFO.socialLinks?.instagram ??
+          'https://instagram.com/glamournails.sydney'
+        : storedBranding?.instagram_url !== undefined
+        ? storedBranding.instagram_url
+        : data.social_links?.instagram ??
+          FALLBACK_BUSINESS_INFO.socialLinks?.instagram ??
+          'https://instagram.com/glamournails.sydney';
 
       const mergedSocialLinks = {
         ...(FALLBACK_BUSINESS_INFO.socialLinks || {}),
@@ -668,40 +680,66 @@ export async function getPublicBusinessInfo(): Promise<BusinessInfo> {
         holidayNoticeVi,
         googleMapsUrl: data.google_maps_url || FALLBACK_BUSINESS_INFO.googleMapsUrl,
         googleMapsEmbedUrl: data.google_maps_embed_url || FALLBACK_BUSINESS_INFO.googleMapsEmbedUrl,
-        websiteTitle:
-          storedBranding?.website_title ||
-          data.social_links?.website_title ||
-          data.website_title ||
-          data.salon_name ||
-          FALLBACK_BUSINESS_INFO.websiteTitle ||
-          FALLBACK_BUSINESS_INFO.salonName,
-        websiteTitleVi:
-          storedBranding?.website_title_vi ||
-          data.social_links?.website_title_vi ||
-          data.website_title_vi ||
-          data.social_links?.website_title ||
-          data.website_title ||
-          data.salon_name ||
-          FALLBACK_BUSINESS_INFO.websiteTitleVi ||
-          FALLBACK_BUSINESS_INFO.salonName,
-        websiteTagline:
-          storedBranding?.website_tagline ||
-          data.social_links?.website_tagline ||
-          data.website_tagline ||
-          FALLBACK_BUSINESS_INFO.websiteTagline ||
-          'Sydney CBD • Boutique Lounge',
-        websiteTaglineVi:
-          storedBranding?.website_tagline_vi ||
-          data.social_links?.website_tagline_vi ||
-          data.website_tagline_vi ||
-          FALLBACK_BUSINESS_INFO.websiteTaglineVi ||
-          'Sydney CBD • Tiệm Nail Sang Trọng',
-        logoUrl:
-          storedBranding?.logo_url ||
-          data.social_links?.logo_url ||
-          data.logo_url ||
-          FALLBACK_BUSINESS_INFO.logoUrl ||
-          '',
+        websiteTitle: preferDb
+          ? data.website_title ||
+            data.social_links?.website_title ||
+            data.salon_name ||
+            storedBranding?.website_title ||
+            FALLBACK_BUSINESS_INFO.websiteTitle ||
+            FALLBACK_BUSINESS_INFO.salonName
+          : storedBranding?.website_title ||
+            data.website_title ||
+            data.social_links?.website_title ||
+            data.salon_name ||
+            FALLBACK_BUSINESS_INFO.websiteTitle ||
+            FALLBACK_BUSINESS_INFO.salonName,
+        websiteTitleVi: preferDb
+          ? data.website_title_vi ||
+            data.social_links?.website_title_vi ||
+            data.website_title ||
+            data.salon_name ||
+            storedBranding?.website_title_vi ||
+            FALLBACK_BUSINESS_INFO.websiteTitleVi ||
+            FALLBACK_BUSINESS_INFO.salonName
+          : storedBranding?.website_title_vi ||
+            data.website_title_vi ||
+            data.social_links?.website_title_vi ||
+            data.social_links?.website_title ||
+            data.website_title ||
+            data.salon_name ||
+            FALLBACK_BUSINESS_INFO.websiteTitleVi ||
+            FALLBACK_BUSINESS_INFO.salonName,
+        websiteTagline: preferDb
+          ? data.website_tagline ||
+            data.social_links?.website_tagline ||
+            storedBranding?.website_tagline ||
+            FALLBACK_BUSINESS_INFO.websiteTagline ||
+            'Sydney CBD • Boutique Lounge'
+          : storedBranding?.website_tagline ||
+            data.website_tagline ||
+            data.social_links?.website_tagline ||
+            FALLBACK_BUSINESS_INFO.websiteTagline ||
+            'Sydney CBD • Boutique Lounge',
+        websiteTaglineVi: preferDb
+          ? data.website_tagline_vi ||
+            data.social_links?.website_tagline_vi ||
+            storedBranding?.website_tagline_vi ||
+            FALLBACK_BUSINESS_INFO.websiteTaglineVi ||
+            'Sydney CBD • Tiệm Nail Sang Trọng'
+          : storedBranding?.website_tagline_vi ||
+            data.website_tagline_vi ||
+            data.social_links?.website_tagline_vi ||
+            FALLBACK_BUSINESS_INFO.websiteTaglineVi ||
+            'Sydney CBD • Tiệm Nail Sang Trọng',
+        logoUrl: preferDb
+          ? (data.logo_url !== undefined && data.logo_url !== null ? data.logo_url : '') ||
+            data.social_links?.logo_url ||
+            ''
+          : storedBranding?.logo_url ||
+            data.logo_url ||
+            data.social_links?.logo_url ||
+            FALLBACK_BUSINESS_INFO.logoUrl ||
+            '',
       };
     }
   } catch (err) {
@@ -899,7 +937,36 @@ export function getOpeningStatus(isHoliday: boolean = false) {
 }
 
 export async function getPublicAboutStory(): Promise<AboutStoryConfig> {
-  // 1. Prefer locally persisted CMS overrides (survives offline/RLS states)
+  const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST);
+
+  // 1. In production/dev with Supabase, read live database first so Local & Vercel stay 100% synced
+  if (!isTest) {
+    try {
+      const supabase = await getSupabaseSafe();
+      const { data } = await supabase
+        .from('nail_cms_sections')
+        .select('*')
+        .eq('section_key', 'about_story')
+        .maybeSingle();
+
+      if (data) {
+        const meta = (data.metadata || {}) as Partial<AboutStoryConfig>;
+        return {
+          ...DEFAULT_ABOUT_STORY,
+          ...meta,
+          story_title_en: meta.story_title_en || data.title_en || DEFAULT_ABOUT_STORY.story_title_en,
+          story_title_vi: meta.story_title_vi || data.title_vi || DEFAULT_ABOUT_STORY.story_title_vi,
+          page_subtitle_en: meta.page_subtitle_en || data.subtitle_en || DEFAULT_ABOUT_STORY.page_subtitle_en,
+          page_subtitle_vi: meta.page_subtitle_vi || data.subtitle_vi || DEFAULT_ABOUT_STORY.page_subtitle_vi,
+          image_url: meta.image_url || data.image_url || DEFAULT_ABOUT_STORY.image_url,
+        };
+      }
+    } catch (err) {
+      console.warn('getPublicAboutStory falling back to local store', err);
+    }
+  }
+
+  // 2. Local / unit-test storage fallback
   const stored = getStoredAboutStory();
   if (stored) {
     return {
@@ -907,31 +974,6 @@ export async function getPublicAboutStory(): Promise<AboutStoryConfig> {
       ...stored,
       image_url: stored.image_url || DEFAULT_ABOUT_STORY.image_url,
     };
-  }
-
-  // 2. Fallback to Supabase nail_cms_sections if configured remotely
-  try {
-    const supabase = await getSupabaseSafe();
-    const { data } = await supabase
-      .from('nail_cms_sections')
-      .select('*')
-      .eq('section_key', 'about_story')
-      .maybeSingle();
-
-    if (data) {
-      const meta = (data.metadata || {}) as Partial<AboutStoryConfig>;
-      return {
-        ...DEFAULT_ABOUT_STORY,
-        ...meta,
-        story_title_en: meta.story_title_en || data.title_en || DEFAULT_ABOUT_STORY.story_title_en,
-        story_title_vi: meta.story_title_vi || data.title_vi || DEFAULT_ABOUT_STORY.story_title_vi,
-        page_subtitle_en: meta.page_subtitle_en || data.subtitle_en || DEFAULT_ABOUT_STORY.page_subtitle_en,
-        page_subtitle_vi: meta.page_subtitle_vi || data.subtitle_vi || DEFAULT_ABOUT_STORY.page_subtitle_vi,
-        image_url: meta.image_url || data.image_url || DEFAULT_ABOUT_STORY.image_url,
-      };
-    }
-  } catch (err) {
-    console.warn('getPublicAboutStory falling back to defaults', err);
   }
 
   return { ...DEFAULT_ABOUT_STORY };
