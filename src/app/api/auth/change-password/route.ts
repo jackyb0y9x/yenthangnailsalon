@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 import { getSessionFromRequest } from '@/middleware';
-import { createClient } from '@/lib/supabase/server';
 import {
   findStaffAccount,
+  getSupabaseAuthEmail,
   verifyAccountPassword,
   updateAccountPassword,
   validateNewPassword,
@@ -99,7 +100,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isCurrentValid = await verifyAccountPassword(account, currentPassword);
+    const pendingSupabaseCookies: Array<{ name: string; value: string; options?: any }> = [];
+    const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST);
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+
+    const supabaseClient =
+      !isTest && supabaseUrl && supabaseAnonKey
+        ? createServerClient(supabaseUrl, supabaseAnonKey, {
+            cookies: {
+              getAll() {
+                return request.cookies.getAll();
+              },
+              setAll(cookiesToSet) {
+                cookiesToSet.forEach((c) => pendingSupabaseCookies.push(c));
+              },
+            },
+          })
+        : undefined;
+
+    const isCurrentValid = await verifyAccountPassword(account, currentPassword, supabaseClient);
     if (!isCurrentValid) {
       return NextResponse.json(
         {
@@ -110,28 +130,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Persist salted scrypt hash locally (and invalidate old default password)
-    const record = updateAccountPassword(account, newPassword);
-
-    // Best-effort sync to live Supabase Auth if active
-    if (
-      account.email.includes('@') &&
-      process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    ) {
+    // Sync new password to live Supabase Auth so password changes persist across Local & Vercel
+    const authEmail = getSupabaseAuthEmail(account);
+    if (supabaseClient && authEmail) {
       try {
-        const supabase = await createClient();
-        await supabase.auth.updateUser({ password: newPassword });
-      } catch {
-        // Local hashed credential store already updated cleanly
+        const { error: updateErr } = await supabaseClient.auth.updateUser({
+          password: newPassword,
+        });
+        if (updateErr) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Không thể cập nhật mật khẩu trên Supabase Auth: ${updateErr.message}`,
+            },
+            { status: 500 }
+          );
+        }
+      } catch (err: any) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Lỗi đồng bộ mật khẩu Supabase Auth: ${err?.message || 'Unknown error'}`,
+          },
+          { status: 500 }
+        );
       }
     }
 
-    return NextResponse.json({
+    // Also persist salted scrypt hash locally (used in test/offline mode)
+    const record = updateAccountPassword(account, newPassword);
+
+    const response = NextResponse.json({
       success: true,
       message: 'Cập nhật mật khẩu thành công! (Password updated successfully.)',
       updated_at: record.updated_at,
     });
+
+    for (const { name, value, options } of pendingSupabaseCookies) {
+      response.cookies.set(name, value, options);
+    }
+
+    return response;
   } catch (err: any) {
     return NextResponse.json(
       { success: false, error: err.message || 'Internal server error.' },

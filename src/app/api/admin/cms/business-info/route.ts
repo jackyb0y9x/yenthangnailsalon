@@ -12,6 +12,7 @@ import {
 } from '@/lib/cms/branding-storage';
 import {
   getSupabaseAdminSafe,
+  getSupabaseSyncStatus,
   hasSupabaseAdminCredentials,
   isLiveSupabaseConfigured,
   isTestRuntime,
@@ -19,7 +20,6 @@ import {
   execSupabaseUpdate,
   execSupabaseInsert,
 } from '@/lib/supabase/admin';
-import { isServerlessRuntime } from '@/lib/utils/storage-path';
 
 const VALID_AU_STATES = new Set(['NSW', 'VIC', 'QLD', 'WA', 'SA', 'TAS', 'ACT', 'NT']);
 
@@ -119,14 +119,12 @@ export async function GET(request: NextRequest) {
           'https://instagram.com/glamournails.sydney',
     };
 
+    const syncStatus = await getSupabaseSyncStatus(supabase);
+
     return NextResponse.json({
       success: true,
       businessInfo: merged,
-      syncStatus: {
-        hasAdminKey: hasSupabaseAdminCredentials(),
-        isLiveSupabase: isLiveSupabaseConfigured(),
-        isServerless: isServerlessRuntime(),
-      },
+      syncStatus,
     });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

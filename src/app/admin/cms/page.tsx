@@ -75,6 +75,8 @@ function AdminCmsPortalContent() {
   const [loading, setLoading] = useState(false);
   const [syncStatus, setSyncStatus] = useState<{
     hasAdminKey: boolean;
+    hasSupabaseAuthSession?: boolean;
+    canWriteToDb?: boolean;
     isLiveSupabase: boolean;
     isServerless: boolean;
   } | null>(null);
@@ -708,21 +710,33 @@ function AdminCmsPortalContent() {
       </div>
 
       {/* Supabase Database Sync Diagnostic Banner */}
-      {syncStatus && syncStatus.isLiveSupabase && !syncStatus.hasAdminKey && (
-        <div className="p-4 rounded-xl border bg-amber-950/50 border-amber-700/80 text-amber-100 flex items-start gap-3 text-xs leading-relaxed">
-          <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <p className="font-semibold text-amber-200">
-              {locale === 'vi'
-                ? 'Thiếu biến môi trường SUPABASE_SERVICE_ROLE_KEY — Chưa thể lưu trực tiếp lên Supabase DB'
-                : 'Missing SUPABASE_SERVICE_ROLE_KEY — Supabase DB writes are currently blocked by RLS'}
-            </p>
-            <p className="text-amber-100/90">
-              {locale === 'vi'
-                ? 'Để dữ liệu CMS (Thông tin tiệm, Thương hiệu, Logo, MXH, Bản đồ, Câu chuyện...) đồng bộ 100% giữa Local và Vercel, hãy lấy khóa service_role (hoặc Secret Key) trong Supabase Dashboard → Project Settings → API, sau đó thêm biến SUPABASE_SERVICE_ROLE_KEY vào cả file .env.local lẫn Vercel → Settings → Environment Variables và Redeploy.'
-                : 'To sync CMS edits consistently across Local and Vercel, copy your service_role / Secret Key from Supabase Dashboard → Project Settings → API, add SUPABASE_SERVICE_ROLE_KEY to .env.local and Vercel Environment Variables, then Redeploy.'}
-            </p>
+      {syncStatus && syncStatus.isLiveSupabase && syncStatus.canWriteToDb === false && (
+        <div className="p-4 rounded-xl border bg-amber-950/50 border-amber-700/80 text-amber-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs leading-relaxed">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-semibold text-amber-200">
+                {locale === 'vi'
+                  ? 'Cần làm mới phiên đăng nhập để đồng bộ trực tiếp lên Supabase DB'
+                  : 'Re-login required to enable live Supabase DB sync'}
+              </p>
+              <p className="text-amber-100/90">
+                {locale === 'vi'
+                  ? 'Phiên đăng nhập cũ chưa mang token Supabase Auth nên RLS đang chặn quyền ghi. Hãy bấm nút bên cạnh để đăng xuất và đăng nhập lại bằng tài khoản superadmin (không cần cấu hình thêm biến môi trường).'
+                  : 'Your current session does not carry a Supabase Auth JWT token yet. Sign out and sign in again with superadmin to enable live Supabase DB & Storage sync automatically.'}
+              </p>
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={async () => {
+              await fetch('/api/auth/logout', { method: 'POST' });
+              window.location.href = '/admin/login';
+            }}
+            className="shrink-0 px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs transition-colors cursor-pointer"
+          >
+            {locale === 'vi' ? 'Đăng xuất & Đăng nhập lại' : 'Sign Out & Re-Login'}
+          </button>
         </div>
       )}
 

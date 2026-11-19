@@ -18,6 +18,8 @@ export interface StaffAccount {
   name: string;
   username?: string;
   email: string;
+  /** Internal Supabase Auth email for JWT-authenticated RLS access */
+  authEmail?: string;
   role: 'super_admin' | 'manager' | 'staff';
   password?: string;
   passwords: string[];
@@ -38,6 +40,7 @@ export const DEFAULT_STAFF_ROSTER: StaffAccount[] = [
     name: 'Super Admin',
     username: 'superadmin',
     email: 'superadmin',
+    authEmail: 'superadmin@glamournails.com.au',
     role: 'super_admin',
     passwords: ['YenThang@2026'],
     specializations: ['System Administration', 'Salon Management'],
@@ -47,6 +50,7 @@ export const DEFAULT_STAFF_ROSTER: StaffAccount[] = [
     name: 'Michelle Nguyen',
     username: 'admin',
     email: 'admin@glamournails.com.au',
+    authEmail: 'admin@glamournails.com.au',
     role: 'super_admin',
     passwords: ['SalonAdmin2026!', 'SecurePassword2026!'],
     specializations: ['Russian Manicure', 'Acrylic', 'SNS Dip', '3D Art'],
@@ -221,10 +225,11 @@ export async function findStaffAccount(identifierOrId: {
   const rawIdent = (identifierOrId.identifier || '').trim().toLowerCase();
   const rawId = (identifierOrId.id || '').trim().toLowerCase();
 
-  // 1. Check built-in default roster (matches email, username, or id)
+  // 1. Check built-in default roster (matches email, authEmail, username, or id)
   const rosterMatch = DEFAULT_STAFF_ROSTER.find((s) => {
     if (rawIdent) {
       if (s.email.toLowerCase() === rawIdent) return true;
+      if (s.authEmail && s.authEmail.toLowerCase() === rawIdent) return true;
       if (s.username && s.username.toLowerCase() === rawIdent) return true;
     }
     if (rawId && s.id.toLowerCase() === rawId) return true;
@@ -278,35 +283,71 @@ export async function findStaffAccount(identifierOrId: {
   return null;
 }
 
+export const SUPABASE_MANAGED_AUTH_EMAILS = new Set([
+  'superadmin@glamournails.com.au',
+  'admin@glamournails.com.au',
+]);
+
+export function getSupabaseAuthEmail(account: {
+  email?: string;
+  username?: string;
+  authEmail?: string;
+}): string | null {
+  if (account.authEmail && account.authEmail.includes('@')) {
+    return account.authEmail.trim().toLowerCase();
+  }
+  if (account.username?.trim().toLowerCase() === 'superadmin' || account.email?.trim().toLowerCase() === 'superadmin') {
+    return 'superadmin@glamournails.com.au';
+  }
+  if (account.email && account.email.includes('@')) {
+    return account.email.trim().toLowerCase();
+  }
+  return null;
+}
+
 export async function verifyAccountPassword(
   account: StaffAccount,
-  plainPassword: string
+  plainPassword: string,
+  supabaseClientOverride?: any
 ): Promise<boolean> {
-  // 1. If the user has updated their password, enforce ONLY the stored hashed password
-  const override = getPasswordOverride(account);
-  if (override) {
-    return verifyPasswordHash(plainPassword, override);
-  }
+  const authEmail = getSupabaseAuthEmail(account);
+  const hasLiveSupabase =
+    !isTestEnv() &&
+    Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()) &&
+    Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim());
 
-  // 2. Check against live Supabase Auth if email contains '@' and Supabase is configured
-  if (
-    account.email.includes('@') &&
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
+  // 1. In live runtime, authenticate directly against Supabase Auth first so
+  //    cloud-updated passwords and RLS JWT cookies stay 100% synced across Local & Vercel.
+  if (hasLiveSupabase && authEmail) {
     try {
-      const supabase = await createClient();
+      const supabase = supabaseClientOverride || (await createClient());
       const { error: authError } = await supabase.auth.signInWithPassword({
-        email: account.email,
+        email: authEmail,
         password: plainPassword,
       });
       if (!authError) {
         return true;
       }
-    } catch {}
+      // For accounts managed directly in Supabase Auth, reject invalid password
+      // instead of falling back to hardcoded default passwords.
+      if (
+        SUPABASE_MANAGED_AUTH_EMAILS.has(authEmail) &&
+        (authError.status === 400 || /invalid login credentials/i.test(authError.message || ''))
+      ) {
+        return false;
+      }
+    } catch {
+      // Network/offline fallback below
+    }
   }
 
-  // 3. Fallback to assigned default credentials
+  // 2. If the user has updated their password locally/in tests, enforce ONLY the stored hashed password
+  const override = getPasswordOverride(account);
+  if (override) {
+    return verifyPasswordHash(plainPassword, override);
+  }
+
+  // 3. Fallback to assigned default credentials (test mode or non-Supabase-seeded accounts)
   if (account.password && plainPassword === account.password) {
     return true;
   }

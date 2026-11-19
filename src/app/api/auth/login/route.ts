@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 import {
   findStaffAccount,
   verifyAccountPassword,
@@ -52,7 +53,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const authenticated = await verifyAccountPassword(staffMember, password);
+    const pendingSupabaseCookies: Array<{ name: string; value: string; options?: any }> = [];
+    const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST);
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+
+    const supabaseClient =
+      !isTest && supabaseUrl && supabaseAnonKey
+        ? createServerClient(supabaseUrl, supabaseAnonKey, {
+            cookies: {
+              getAll() {
+                return request.cookies.getAll();
+              },
+              setAll(cookiesToSet) {
+                cookiesToSet.forEach((c) => pendingSupabaseCookies.push(c));
+              },
+            },
+          })
+        : undefined;
+
+    const authenticated = await verifyAccountPassword(staffMember, password, supabaseClient);
     if (!authenticated) {
       return NextResponse.json(
         { success: false, error: 'Invalid login credentials.' },
@@ -62,6 +82,7 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json({
       success: true,
+      supabaseSynced: pendingSupabaseCookies.length > 0,
       user: {
         id: staffMember.id,
         name: staffMember.name,
@@ -82,6 +103,11 @@ export async function POST(request: NextRequest) {
     response.cookies.set('sb-role', staffMember.role, cookieOptions);
     response.cookies.set('sb-email', staffMember.email, cookieOptions);
     response.cookies.set('sb-id', staffMember.id, cookieOptions);
+
+    // Attach real Supabase Auth JWT session cookies for RLS-authenticated DB & Storage writes
+    for (const { name, value, options } of pendingSupabaseCookies) {
+      response.cookies.set(name, value, options);
+    }
 
     return response;
   } catch (err: any) {

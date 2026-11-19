@@ -7,6 +7,7 @@ import {
   execSupabaseInsert,
   hasSupabaseAdminCredentials,
 } from '@/lib/supabase/admin';
+import { getSupabaseAuthEmail } from '@/lib/auth/credentials';
 import { GET, POST } from '@/app/api/admin/cms/business-info/route';
 
 vi.mock('next/cache', () => ({
@@ -140,6 +141,10 @@ describe('Unified Business Info & Local/Vercel Supabase Sync', () => {
       expect(getJson.success).toBe(true);
       expect(getJson.syncStatus).toBeDefined();
       expect(typeof getJson.syncStatus.hasAdminKey).toBe('boolean');
+      expect(typeof getJson.syncStatus.canWriteToDb).toBe('boolean');
+      expect(getSupabaseAuthEmail({ username: 'superadmin', email: 'superadmin' })).toBe(
+        'superadmin@glamournails.com.au'
+      );
       expect(getJson.businessInfo.website_title_vi).toBe('Yến Thắng Nails & Spa Sydney');
       expect(getJson.businessInfo.facebook_url).toBe('https://facebook.com/yenthangnails');
       expect(getJson.businessInfo.instagram_url).toBe('https://instagram.com/yenthangnails');
