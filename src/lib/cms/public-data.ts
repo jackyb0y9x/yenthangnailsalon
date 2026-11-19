@@ -790,7 +790,17 @@ export async function getPublicServices(category?: string): Promise<PublicServic
     }
     const { data } = await query;
     if (data && data.length > 0) {
-      return data;
+      return data.map((d: any) => {
+        const priceAud = Number(d.price_aud ?? (d.price_cents ? d.price_cents / 100 : 0));
+        return {
+          ...d,
+          price_aud: Number.isFinite(priceAud) ? priceAud : 0,
+          price_cents: d.price_cents ?? Math.round((Number.isFinite(priceAud) ? priceAud : 0) * 100),
+          duration_minutes: Number(d.duration_minutes || 45),
+          is_featured: Boolean(d.is_featured),
+          is_active: d.is_active !== false,
+        };
+      });
     }
   } catch (err) {
     console.warn('getPublicServices falling back to mock services', err);

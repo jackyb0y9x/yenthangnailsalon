@@ -95,68 +95,39 @@ export default async function HomePage({
   const heroCtaLink = hero.cta_link || `/${typedLocale}/contact`;
   const heroImageUrl = hero.image_url || "https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=1600&q=80";
 
-  const featuredServices = services.slice(0, 6);
+  const featuredServicesList = services.filter((s) => s.is_featured);
+  const showcaseServices = featuredServicesList.length > 0 ? featuredServicesList : services;
+  const featuredServices = showcaseServices.slice(0, 6);
   const featuredGallery = gallery.filter((g) => g.is_featured);
 
-  // Curated showcase items combining top services & artistry for the alternating scroll reveal
-  const alternatingItems: ShowcaseItem[] = [
-    {
-      id: 'showcase-1',
-      title: isEn ? 'Bespoke Ombre & Swarovski Crystal Art' : 'Nghệ Thuật Ombre & Pha Lê Swarovski',
-      category: isEn ? 'Signature Art' : 'Mẫu Độc Quyền',
+  // Pull Alternating Showcase directly from live CMS Services (`/admin/cms?tab=services`)
+  const alternatingItems: ShowcaseItem[] = showcaseServices.map((service, idx) => {
+    const priceAud = Number(service.price_aud ?? (service.price_cents ? service.price_cents / 100 : 0));
+    const fallbackImages = [
+      'https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?auto=format&fit=crop&w=1200&q=80',
+    ];
+
+    return {
+      id: service.id,
+      title: isEn ? service.name_en : (service.name_vi || service.name_en),
+      category: service.category,
       description: isEn
-        ? 'Hand-crafted French ombre gradients paired with precision-placed Swarovski crystal accents. Designed for galas, weddings, and red-carpet occasions.'
-        : 'Kỹ thuật chuyển màu ombre Pháp mượt mà kết hợp đính kết pha lê Swarovski lấp lánh thủ công, dành cho dạ tiệc và sự kiện sang trọng.',
-      imageUrl: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=1600&q=80',
-      priceAud: 95.0,
-      durationMinutes: 75,
-      linkUrl: `/${typedLocale}/contact?service=srv-006`,
-      tags: ['Swarovski', 'FrenchOmbre', '3DArt'],
-      badge: isEn ? 'Most Requested' : 'Yêu Thích Nhất',
-    },
-    {
-      id: 'showcase-2',
-      title: isEn ? 'Organic SNS Dipping Powder System' : 'Hệ Thống Nhúng Bột SNS Hữu Cơ',
-      category: isEn ? 'SNS Dipping' : 'Bột Nhúng SNS',
-      description: isEn
-        ? 'Enriched with Vitamin E & Calcium to strengthen and protect natural nail beds without UV light exposure. Light as a feather, durable for 4+ weeks.'
-        : 'Công thức giàu Vitamin E & Canxi nuôi dưỡng móng tự nhiên, không cần hơ đèn UV, nhẹ thoáng và bền đẹp suốt 4 tuần.',
-      imageUrl: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1600&q=80',
-      priceAud: 75.0,
-      durationMinutes: 50,
-      linkUrl: `/${typedLocale}/contact?service=srv-004`,
-      tags: ['Organic', 'VitaminE', 'NoUVLight'],
-      badge: isEn ? 'Health First' : 'Dưỡng Móng Tự Nhiên',
-    },
-    {
-      id: 'showcase-3',
-      title: isEn ? 'Russian E-File Precision Manicure' : 'Làm Móng Kỹ Thuật E-File Chuẩn Nga',
-      category: isEn ? 'Russian Manicure' : 'E-File Kỹ Thuật Cao',
-      description: isEn
-        ? 'Precision dry electric cuticle refining and micro-buffing for an immaculate, seamless contour that allows gel lacquer to stay closer to cuticles longer.'
-        : 'Kỹ thuật làm sạch da khô bằng đầu mài chuyên dụng châu Âu, đường viền móng sắc sảo không tì vết, giúp nước sơn ôm sát bền đẹp.',
-      imageUrl: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=1600&q=80',
-      priceAud: 70.0,
-      durationMinutes: 60,
-      linkUrl: `/${typedLocale}/contact?service=srv-002`,
-      tags: ['E-File', 'Precision', 'LongLasting'],
-      badge: isEn ? 'Master Stylist' : 'Kỹ Thuật Chuyên Sâu',
-    },
-    {
-      id: 'showcase-4',
-      title: isEn ? 'Luxury Botanical Herbal Spa Pedicure' : 'Spa Chăm Sóc Móng Chân Thảo Mộc',
-      category: isEn ? 'Spa Pedicure' : 'Spa Chân Thảo Dược',
-      description: isEn
-        ? 'Indulgent eucalyptus foot bath, organic dead sea salt exfoliation, thorough callus softening, followed by deep pressure point reflexology massage.'
-        : 'Ngâm chân thảo dược khuynh diệp ấm áp, tẩy tế bào chết muối biển chết hữu cơ, làm mềm gót chân và massage bấm huyệt thư giãn sâu.',
-      imageUrl: 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?auto=format&fit=crop&w=1600&q=80',
-      priceAud: 65.0,
-      durationMinutes: 45,
-      linkUrl: `/${typedLocale}/contact?service=srv-003`,
-      tags: ['Eucalyptus', 'SeaSalt', 'DeepRelaxation'],
-      badge: isEn ? 'Pure Wellness' : 'Thư Giãn Trọn Vẹn',
-    },
-  ];
+        ? (service.description_en || 'Bespoke nail artistry and holistic spa care crafted with hospital-grade hygiene in Sydney CBD.')
+        : (service.description_vi || service.description_en || 'Dịch vụ chăm sóc móng và spa thư giãn cao cấp, thực hiện tỉ mỉ theo quy chuẩn vệ sinh y khoa tại Sydney CBD.'),
+      imageUrl: service.image_url || fallbackImages[idx % fallbackImages.length],
+      priceAud: Number.isFinite(priceAud) ? priceAud : 0,
+      durationMinutes: Number(service.duration_minutes || 45),
+      linkUrl: `/${typedLocale}/contact?service=${encodeURIComponent(service.id)}`,
+      badge: service.is_featured
+        ? (isEn
+            ? (idx === 0 ? 'Most Requested' : 'Featured Service')
+            : (idx === 0 ? 'Yêu Thích Nhất' : 'Dịch Vụ Nổi Bật'))
+        : undefined,
+    };
+  });
 
   return (
     <div className="w-full pb-16 sm:pb-20 overflow-x-hidden">
@@ -209,7 +180,7 @@ export default async function HomePage({
           <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-[1.16] drop-shadow-xl px-1">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-champagne-100 via-champagne-200 to-amber-200">
               {typedLocale === 'vi'
-                ? 'Nghệ Thuật Làm Móng & Chăm Sóc Spa Thư Giãn Đẳng Cấp'
+                ? (heroHeadline || 'Nghệ Thuật Làm Móng & Chăm Sóc Spa Thư Giãn Đẳng Cấp')
                 : (heroHeadline || 'Haute Nail Artistry & Bespoke Luxury Spa Sanctuary')}
             </span>
           </h1>
@@ -282,9 +253,9 @@ export default async function HomePage({
             ? 'Discover our most celebrated nail styles, crafted with European dry E-file precision, hospital-grade hygiene, and premium non-toxic materials.'
             : 'Khám phá các thiết kế móng độc bản được săn đón nhất, thực hiện với kỹ thuật chuẩn châu Âu, an toàn y tế và vật liệu hữu cơ cao cấp.'
         }
-        viewAllLink={`/${typedLocale}/gallery`}
-        viewAllText={isEn ? 'Explore All Designs' : 'Xem Tất Cả Mẫu Móng'}
-        ctaText={isEn ? 'Book This Style' : 'Đặt Lịch Mẫu Này'}
+        viewAllLink={`/${typedLocale}/services`}
+        viewAllText={isEn ? 'Explore All Services' : 'Xem Tất Cả Dịch Vụ'}
+        ctaText={isEn ? 'Book This Service' : 'Đặt Lịch Dịch Vụ Này'}
       />
 
       {/* Featured Services Section (Full Width Grid) */}

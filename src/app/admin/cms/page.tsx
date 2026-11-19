@@ -1116,21 +1116,42 @@ function AdminCmsPortalContent() {
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-slate-950/80 text-slate-400 border-b border-slate-800 uppercase font-mono tracking-wider">
                   <tr>
-                    <th className="px-4 py-3">Category</th>
-                    <th className="px-4 py-3">Service Name (EN / VI)</th>
-                    <th className="px-4 py-3">Price AUD (inc. GST)</th>
-                    <th className="px-4 py-3">Duration</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                    <th className="px-4 py-3">{locale === 'vi' ? 'Ảnh' : 'Image'}</th>
+                    <th className="px-4 py-3">{locale === 'vi' ? 'Danh Mục' : 'Category'}</th>
+                    <th className="px-4 py-3">{locale === 'vi' ? 'Tên Dịch Vụ (EN / VI)' : 'Service Name (EN / VI)'}</th>
+                    <th className="px-4 py-3">{locale === 'vi' ? 'Giá AUD (gồm GST)' : 'Price AUD (inc. GST)'}</th>
+                    <th className="px-4 py-3">{locale === 'vi' ? 'Thời Lượng' : 'Duration'}</th>
+                    <th className="px-4 py-3">{locale === 'vi' ? 'Trạng Thái' : 'Status'}</th>
+                    <th className="px-4 py-3 text-right">{locale === 'vi' ? 'Thao Tác' : 'Actions'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
                   {services.map((s) => (
                     <tr key={s.id} className="hover:bg-slate-800/40 transition-colors">
                       <td className="px-4 py-3">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-950 border border-slate-800 shrink-0 flex items-center justify-center">
+                          {s.image_url ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img
+                              src={s.image_url}
+                              alt={s.name_en}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <ImageIcon className="w-4 h-4 text-slate-600" />
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
                         <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-800 text-champagne-300 font-medium">
                           {s.category}
                         </span>
+                        {s.is_featured && (
+                          <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-amber-950/70 text-amber-300 border border-amber-800/60 font-medium">
+                            <Star className="w-2.5 h-2.5 fill-amber-400" />
+                            {locale === 'vi' ? 'Trang chủ' : 'Featured'}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <p className="font-semibold text-white text-sm">{s.name_en}</p>
@@ -1237,10 +1258,28 @@ function AdminCmsPortalContent() {
                       >
                         <option value="Manicure">Manicure</option>
                         <option value="Pedicure">Pedicure</option>
+                        <option value="SNS & Dipping">SNS &amp; Dipping</option>
                         <option value="SNS Dipping">SNS Dipping</option>
+                        <option value="Acrylic & Extensions">Acrylic &amp; Extensions</option>
                         <option value="Acrylic">Acrylic</option>
+                        <option value="Gel Art & Design">Gel Art &amp; Design</option>
                         <option value="Gel Art">Gel Art</option>
+                        <option value="Spa Packages">Spa Packages</option>
                         <option value="Spa Package">Spa Package</option>
+                        {![
+                          'Manicure',
+                          'Pedicure',
+                          'SNS & Dipping',
+                          'SNS Dipping',
+                          'Acrylic & Extensions',
+                          'Acrylic',
+                          'Gel Art & Design',
+                          'Gel Art',
+                          'Spa Packages',
+                          'Spa Package',
+                        ].includes(serviceForm.category) && serviceForm.category && (
+                          <option value={serviceForm.category}>{serviceForm.category}</option>
+                        )}
                       </select>
                     </div>
 
@@ -1253,7 +1292,7 @@ function AdminCmsPortalContent() {
                         required
                         value={serviceForm.price_aud}
                         onChange={(e) =>
-                          setServiceForm({ ...serviceForm, price_aud: Number(e.target.value) })
+                          setServiceForm((prev) => ({ ...prev, price_aud: Number(e.target.value) }))
                         }
                         className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white font-mono"
                       />
@@ -1267,12 +1306,43 @@ function AdminCmsPortalContent() {
                         required
                         value={serviceForm.duration_minutes}
                         onChange={(e) =>
-                          setServiceForm({
-                            ...serviceForm,
+                          setServiceForm((prev) => ({
+                            ...prev,
                             duration_minutes: Number(e.target.value),
-                          })
+                          }))
                         }
                         className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs text-slate-300">
+                        {locale === 'vi' ? 'Mô tả (Tiếng Anh)' : 'Description (English)'}
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={serviceForm.description_en}
+                        onChange={(e) =>
+                          setServiceForm((prev) => ({ ...prev, description_en: e.target.value }))
+                        }
+                        placeholder="Short service description in English..."
+                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-slate-300">
+                        {locale === 'vi' ? 'Mô tả (Tiếng Việt)' : 'Description (Tiếng Việt)'}
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={serviceForm.description_vi}
+                        onChange={(e) =>
+                          setServiceForm((prev) => ({ ...prev, description_vi: e.target.value }))
+                        }
+                        placeholder="Mô tả ngắn gọn hiển thị trên Trang Chủ & Bảng Giá..."
+                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white"
                       />
                     </div>
                   </div>
@@ -1305,11 +1375,15 @@ function AdminCmsPortalContent() {
                         type="checkbox"
                         checked={serviceForm.is_featured}
                         onChange={(e) =>
-                          setServiceForm({ ...serviceForm, is_featured: e.target.checked })
+                          setServiceForm((prev) => ({ ...prev, is_featured: e.target.checked }))
                         }
                         className="rounded bg-slate-950 border-slate-800 text-champagne-400"
                       />
-                      <span>Pin to Featured Services</span>
+                      <span>
+                        {locale === 'vi'
+                          ? 'Ghim lên Trang Chủ (Nghệ Thuật Làm Móng Tràn Viền & Dịch Vụ Tiêu Biểu)'
+                          : 'Pin to Homepage (Artistry Showcase & Featured Services)'}
+                      </span>
                     </label>
                   </div>
 
