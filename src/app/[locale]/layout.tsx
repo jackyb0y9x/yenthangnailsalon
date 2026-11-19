@@ -6,6 +6,7 @@ import { getPublicBusinessInfo, getPublicAnnouncements } from '@/lib/cms/public-
 import { Header } from '@/components/public/Header';
 import { Footer } from '@/components/public/Footer';
 import { FloatingSocialDock } from '@/components/public/SocialIcons';
+import { FallingHeartsEffect } from '@/components/public/FallingHeartsEffect';
 import { LocalBusinessJsonLd } from '@/components/seo/LocalBusinessJsonLd';
 
 export const dynamic = 'force-dynamic';
@@ -56,6 +57,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         dict={dict}
         businessInfo={businessInfo}
       />
+      <FallingHeartsEffect />
       <FloatingSocialDock
         facebookUrl={facebookUrl}
         instagramUrl={instagramUrl}

@@ -114,13 +114,65 @@ body {
   pointer-events: none;
 }
 
+/* Gentle Twinkling Falling Hearts Portal Effect */
+@keyframes heartFall {
+  0% {
+    transform: translate3d(0, -10vh, 0);
+  }
+  100% {
+    transform: translate3d(0, 112vh, 0);
+  }
+}
+
+@keyframes heartSwayTwinkle {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(-10deg) scale(0.86);
+    opacity: 0.28;
+  }
+  25% {
+    transform: translate3d(calc(var(--heart-sway, 16px) * 0.7), 0, 0) rotate(8deg) scale(1.12);
+    opacity: 0.92;
+  }
+  50% {
+    transform: translate3d(var(--heart-sway, 16px), 0, 0) rotate(-6deg) scale(0.82);
+    opacity: 0.32;
+  }
+  75% {
+    transform: translate3d(calc(var(--heart-sway, 16px) * 0.3), 0, 0) rotate(12deg) scale(1.1);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-10deg) scale(0.86);
+    opacity: 0.28;
+  }
+}
+
+.falling-heart-drop {
+  will-change: transform;
+  animation-name: heartFall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.falling-heart-twinkle {
+  will-change: transform, opacity;
+  animation-name: heartSwayTwinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-spin-slow,
   .social-orb-ring,
   .social-float,
   .social-float-delayed,
   .social-sheen::after,
-  .social-pulse-aura::before {
+  .social-pulse-aura::before,
+  .falling-heart-drop,
+  .falling-heart-twinkle {
     animation: none !important;
+  }
+  .falling-hearts-layer {
+    display: none !important;
   }
 }
