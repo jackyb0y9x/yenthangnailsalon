@@ -28,13 +28,13 @@ export function FeaturedLookbookSlider({ items, locale }: FeaturedLookbookSlider
     setCurrentIndex((prev) => (prev - 1 + displayItems.length) % displayItems.length);
   }, [displayItems.length]);
 
-  // Auto next every 3000ms
+  // Auto next every 6000ms (6s)
   useEffect(() => {
     if (displayItems.length <= 1 || isPaused) return;
 
     const timer = setInterval(() => {
       nextSlide();
-    }, 3000);
+    }, 6000);
 
     return () => clearInterval(timer);
   }, [nextSlide, displayItems.length, isPaused]);
@@ -132,14 +132,14 @@ export function FeaturedLookbookSlider({ items, locale }: FeaturedLookbookSlider
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        {/* Animated 3000ms Slide Progress Line */}
+        {/* Animated 6000ms Slide Progress Line */}
         {!isPaused && displayItems.length > 1 && (
           <div className="absolute top-0 left-0 right-0 z-20 h-1 bg-black/15 overflow-hidden">
             <div
               key={currentIndex}
               className="h-full bg-gradient-to-r from-champagne-400 via-amber-400 to-pink-500 origin-left"
               style={{
-                animation: 'sliderProgress 3000ms linear forwards',
+                animation: 'sliderProgress 6000ms linear forwards',
               }}
             />
           </div>
@@ -165,41 +165,33 @@ export function FeaturedLookbookSlider({ items, locale }: FeaturedLookbookSlider
                 className="gallery-card w-full flex-shrink-0"
                 style={{ minWidth: '100%' }}
               >
-                <div className="grid grid-cols-1 lg:grid-cols-12 w-full lg:h-[390px] xl:h-[420px]">
-                  {/* Left Framed Image Showcase (Natural Proportions, Never Over-Zoomed) */}
-                  <div className="lg:col-span-6 relative group overflow-hidden bg-salon-950 h-[250px] sm:h-[320px] md:h-[360px] lg:h-full flex items-center justify-center p-4 sm:p-6 lg:p-7">
-                    {/* Ambient Blurred Backdrop matching the photo tones */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={item.image_url}
-                      alt=""
-                      aria-hidden="true"
-                      className="absolute inset-0 w-full h-full object-cover object-center scale-110 blur-2xl opacity-40 brightness-75 pointer-events-none select-none"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-black/25 pointer-events-none" />
-
-                    {/* Centered Uncropped Nail Art Photo */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 w-full lg:h-[460px] xl:h-[490px]">
+                  {/* Left Balanced 6/12 Image Showcase (Crisp 4:3 Proportion, Full-Fill Without Over-Zoom) */}
+                  <div className="lg:col-span-6 relative group overflow-hidden bg-salon-950 h-[300px] sm:h-[380px] md:h-[430px] lg:h-full">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={item.image_url}
                       alt={altText}
                       loading={idx === 0 ? 'eager' : 'lazy'}
-                      className="relative z-10 max-w-full max-h-full w-auto h-auto object-contain rounded-xl shadow-2xl ring-1 ring-white/15 group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+                      className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-[1.03] transition-transform duration-700 ease-out"
                     />
 
+                    {/* Subtle Luxury Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-80 group-hover:opacity-90 transition-opacity pointer-events-none" />
+
                     {/* Category Badge */}
-                    <div className="absolute top-3.5 left-3.5 sm:top-5 sm:left-5 z-20">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/65 backdrop-blur-md text-champagne-200 border border-champagne-400/45 text-[11px] sm:text-xs font-semibold uppercase tracking-wider shadow-md">
+                    <div className="absolute top-4 left-4 sm:top-5 sm:left-5 z-20">
+                      <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/65 backdrop-blur-md text-champagne-200 border border-champagne-400/45 text-[11px] sm:text-xs font-semibold uppercase tracking-wider shadow-md">
                         <Sparkles className="w-3.5 h-3.5 text-champagne-300" />
                         {item.category || item.category_tag}
                       </span>
                     </div>
 
                     {/* Quick View in Gallery Link */}
-                    <div className="absolute bottom-3.5 right-3.5 sm:bottom-5 sm:right-5 z-20">
+                    <div className="absolute bottom-4 right-4 sm:bottom-5 sm:right-5 z-20">
                       <Link
                         href={`/${locale}/gallery`}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[38px] rounded-full bg-white/95 hover:bg-white text-salon-950 text-xs font-bold shadow-lg backdrop-blur-md transition-all hover:scale-105"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 min-h-[40px] rounded-full bg-white/95 hover:bg-white text-salon-950 text-xs font-bold shadow-lg backdrop-blur-md transition-all hover:scale-105"
                       >
                         <Eye className="w-3.5 h-3.5 text-champagne-600" />
                         <span>{isVi ? 'Xem Trong Bộ Sưu Tập' : 'View in Gallery'}</span>
@@ -208,13 +200,13 @@ export function FeaturedLookbookSlider({ items, locale }: FeaturedLookbookSlider
                   </div>
 
                   {/* Right Editorial Content Panel */}
-                  <div className="lg:col-span-6 p-5 sm:p-7 lg:p-8 xl:p-11 flex flex-col justify-between bg-gradient-to-br from-white via-salon-50/40 to-champagne-50/30 space-y-4 lg:h-full">
+                  <div className="lg:col-span-6 p-5 sm:p-8 lg:p-10 xl:p-12 flex flex-col justify-between bg-gradient-to-br from-white via-salon-50/40 to-champagne-50/30 space-y-5 lg:h-full">
                     <div className="space-y-4">
                       <div className="flex flex-wrap items-center gap-2 text-[11px] sm:text-xs font-semibold text-champagne-700 uppercase tracking-widest">
                         <span>{isVi ? 'Mẫu Móng Thịnh Hành' : 'Trending Nail Design'}</span>
                         <span className="w-1.5 h-1.5 rounded-full bg-champagne-500" />
                         <span className="text-salon-700">
-                          {isVi ? 'Tự động chuyển 3s' : 'Auto-Slide 3s'}
+                          {isVi ? 'Tự động chuyển 6s' : 'Auto-Slide 6s'}
                         </span>
                       </div>
 
