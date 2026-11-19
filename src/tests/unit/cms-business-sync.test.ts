@@ -8,7 +8,10 @@ import {
   hasSupabaseAdminCredentials,
 } from '@/lib/supabase/admin';
 import { getSupabaseAuthEmail } from '@/lib/auth/credentials';
+import { buildOpeningHoursRows } from '@/lib/cms/opening-hours';
 import { GET, POST } from '@/app/api/admin/cms/business-info/route';
+import { GET as getAnnouncement } from '@/app/api/admin/cms/announcement/route';
+import { PUT as putGalleryItem } from '@/app/api/admin/gallery/[id]/route';
 
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
@@ -175,5 +178,57 @@ describe('Unified Business Info & Local/Vercel Supabase Sync', () => {
         /export\s+const\s+dynamic\s*=\s*['"]force-dynamic['"]/
       );
     }
+  });
+
+  it('buildOpeningHoursRows formats custom CMS hours and closed days consistently', () => {
+    const rows = buildOpeningHoursRows({
+      monday: { open: '08:30', close: '19:00', closed: false },
+      tuesday: { open: '08:30', close: '19:00', closed: false },
+      wednesday: { open: '08:30', close: '19:00', closed: false },
+      thursday: { open: '09:00', close: '21:00', closed: false },
+      friday: { open: '09:00', close: '19:30', closed: false },
+      saturday: { open: '09:00', close: '18:00', closed: false },
+      sunday: { open: '10:00', close: '17:00', closed: true },
+    });
+
+    const monWed = rows.find((r) => r.key === 'mon-wed');
+    const thu = rows.find((r) => r.key === 'thursday');
+    const sun = rows.find((r) => r.key === 'sunday');
+
+    expect(monWed?.hoursTextEn).toBe('08:30 – 19:00');
+    expect(thu?.hoursTextEn).toBe('09:00 – 21:00');
+    expect(sun?.hoursTextEn).toBe('Closed');
+    expect(sun?.hoursTextVi).toBe('Đóng cửa');
+  });
+
+  it('PUT /api/admin/gallery/[id] synchronizes thumbnail_url when image_url is updated', async () => {
+    const newImageUrl = 'https://example.com/updated-nail-art.webp';
+    const putReq = makeAuthRequest('http://localhost:3000/api/admin/gallery/gal-001', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title_en: 'Rose Gold French Ombre',
+        image_url: newImageUrl,
+      }),
+    });
+
+    const res = await putGalleryItem(putReq, { params: Promise.resolve({ id: 'gal-001' }) });
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.success).toBe(true);
+    expect(json.item.image_url).toBe(newImageUrl);
+    expect(json.item.thumbnail_url).toBe(newImageUrl);
+  });
+
+  it('GET /api/admin/cms/announcement populates message_en and message_vi cleanly', async () => {
+    const req = makeAuthRequest('http://localhost:3000/api/admin/cms/announcement', {
+      method: 'GET',
+    });
+    const res = await getAnnouncement(req);
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.success).toBe(true);
+    expect(json.announcement.message_en.length).toBeGreaterThan(0);
+    expect(json.announcement.message_vi.length).toBeGreaterThan(0);
   });
 });

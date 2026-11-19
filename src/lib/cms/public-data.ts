@@ -336,7 +336,7 @@ export const FALLBACK_GALLERY: PublicGalleryItem[] = [
     title_vi: 'Ombre Pastel Cam Đào Ánh Ngọc Trai',
     category: 'Ombre',
     category_tag: 'Ombre',
-    image_url: 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=800&q=80',
+    image_url: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=800&q=80',
     tags: ['Ombre', 'Pastel', 'Peach', 'Almond'],
     is_featured: true,
     display_order: 2,
@@ -371,7 +371,7 @@ export const FALLBACK_GALLERY: PublicGalleryItem[] = [
     title_vi: 'Móng Nhọn Đính Pha Lê Swarovski Quý Phái',
     category: '3D Art',
     category_tag: '3D Art',
-    image_url: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=800&q=80',
+    image_url: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=800&q=80',
     tags: ['3D Art', 'Crystals', 'Stiletto', 'Bridal'],
     is_featured: true,
     display_order: 5,
@@ -382,7 +382,7 @@ export const FALLBACK_GALLERY: PublicGalleryItem[] = [
     title_vi: 'Vẽ Nổi 3D Vỏ Sò Vàng & Giọt Sương Pha Lê',
     category: '3D Art',
     category_tag: '3D Art',
-    image_url: 'https://images.unsplash.com/photo-1607779097040-26e80aa78e66?auto=format&fit=crop&w=800&q=80',
+    image_url: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
     tags: ['3D Art', 'Seashell', 'Sculpted', 'Summer'],
     is_featured: false,
     display_order: 6,
@@ -441,7 +441,7 @@ export const FALLBACK_GALLERY: PublicGalleryItem[] = [
     title_vi: 'Nhúng Bột SNS Hồng Nude Tự Nhiên Dưỡng Móng',
     category: 'SNS Dipping',
     category_tag: 'SNS Dipping',
-    image_url: 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=800&q=80',
+    image_url: 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?auto=format&fit=crop&w=800&q=80',
     tags: ['SNS Dipping', 'SNS', 'Nude', 'Organic', 'VitaminE'],
     is_featured: true,
     display_order: 11,
@@ -465,7 +465,7 @@ export const FALLBACK_GALLERY: PublicGalleryItem[] = [
     title_vi: 'Mắt Mèo Nhung Xanh Ngọc Lục Bảo',
     category: 'Gel Art',
     category_tag: 'Gel Art',
-    image_url: 'https://images.unsplash.com/photo-1607779097040-26e80aa78e66?auto=format&fit=crop&w=800&q=80',
+    image_url: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=800&q=80',
     tags: ['Gel Art', 'Cat-Eye', 'Velvet', 'Luxury'],
     is_featured: true,
     display_order: 13,
@@ -803,13 +803,25 @@ export async function getPublicServices(category?: string): Promise<PublicServic
 }
 
 export async function getPublicGallery(category?: string): Promise<PublicGalleryItem[]> {
+  const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST);
+  const isLiveSupabase =
+    !isTest &&
+    Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()) &&
+    Boolean(
+      process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
+        process.env.SUPABASE_SECRET_KEY?.trim() ||
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+    );
+
   let baseItems: any[] = [];
+  let loadedFromLiveDb = false;
   try {
     const supabase = await getSupabaseSafe();
     const query = supabase.from('nail_gallery_items').select('*').order('display_order');
     const { data } = await query;
     if (data && data.length > 0) {
       baseItems = data;
+      loadedFromLiveDb = isLiveSupabase;
     }
   } catch (err) {
     console.warn('getPublicGallery falling back to mock gallery', err);
@@ -835,7 +847,7 @@ export async function getPublicGallery(category?: string): Promise<PublicGallery
     };
   });
 
-  const merged = mergeWithStoredGallery(normalized);
+  const merged = loadedFromLiveDb ? normalized : mergeWithStoredGallery(normalized);
 
   if (category && category !== 'All') {
     const catLower = category.trim().toLowerCase();

@@ -26,6 +26,7 @@ export interface SupabaseSyncStatus {
   canWriteToDb: boolean;
   isLiveSupabase: boolean;
   isServerless: boolean;
+  missingSupabaseEnv?: boolean;
   authEmail?: string | null;
 }
 
@@ -89,13 +90,27 @@ export async function getSupabaseSyncStatus(supabase?: any): Promise<SupabaseSyn
   const hasAdminKey = hasSupabaseAdminCredentials();
   const serverless = isServerlessRuntime();
 
-  if (!isLive || hasAdminKey) {
+  // On Vercel/Serverless without Supabase env vars, writes would only hit ephemeral /tmp
+  if (!isLive) {
     return {
-      hasAdminKey,
+      hasAdminKey: false,
+      hasSupabaseAuthSession: false,
+      canWriteToDb: !serverless,
+      isLiveSupabase: false,
+      isServerless: serverless,
+      missingSupabaseEnv: serverless,
+      authEmail: null,
+    };
+  }
+
+  if (hasAdminKey) {
+    return {
+      hasAdminKey: true,
       hasSupabaseAuthSession: false,
       canWriteToDb: true,
-      isLiveSupabase: isLive,
+      isLiveSupabase: true,
       isServerless: serverless,
+      missingSupabaseEnv: false,
       authEmail: null,
     };
   }
@@ -143,7 +158,14 @@ export function buildDbWriteErrorMessage(
   affectedCount: number,
   tableName: string
 ): string | null {
-  if (isTestRuntime() || !isLiveSupabaseConfigured()) {
+  if (isTestRuntime()) {
+    return null;
+  }
+
+  if (!isLiveSupabaseConfigured()) {
+    if (isServerlessRuntime()) {
+      return `Vercel chưa cấu hình biến môi trường NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY nên không thể lưu bảng "${tableName}" vào Supabase DB. Vui lòng thêm 2 biến này trong Vercel → Project Settings → Environment Variables rồi Redeploy.`;
+    }
     return null;
   }
 

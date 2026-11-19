@@ -67,7 +67,10 @@ export async function POST(request: NextRequest) {
           : current.instagram_webhook_url,
     };
 
-    await saveEffectiveNotificationConfig(updated);
+    const dbErrMsg = await saveEffectiveNotificationConfig(updated);
+    if (dbErrMsg) {
+      return NextResponse.json({ success: false, error: dbErrMsg }, { status: 503 });
+    }
     if (
       body.instagram_profile_url !== undefined &&
       isSafeSocialUrl(updated.instagram_profile_url)

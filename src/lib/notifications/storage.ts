@@ -7,7 +7,13 @@
 import fs from 'fs';
 import path from 'path';
 import { getSupabaseSafe, FALLBACK_BUSINESS_INFO } from '@/lib/cms/public-data';
-import { getSupabaseAdminSafe } from '@/lib/supabase/admin';
+import {
+  getSupabaseAdminSafe,
+  buildDbWriteErrorMessage,
+  execSupabaseUpdate,
+  isLiveSupabaseConfigured,
+  isTestRuntime,
+} from '@/lib/supabase/admin';
 import { getWritableDataDir } from '@/lib/utils/storage-path';
 
 export interface NotificationConfig {
@@ -132,14 +138,45 @@ export async function getEffectiveNotificationConfig(): Promise<NotificationConf
   return merged;
 }
 
-export async function saveEffectiveNotificationConfig(config: NotificationConfig): Promise<void> {
-  // 1. In-memory update
-  (globalThis as any).__mockNotificationConfig = config;
+export async function saveEffectiveNotificationConfig(config: NotificationConfig): Promise<string | null> {
+  // 1. Persistent Supabase write via admin client (authoritative in live runtime)
+  const supabase = await getSupabaseAdminSafe();
+  const { data: existing } = await supabase.from('nail_business_info').select('*').limit(1).maybeSingle();
+  const updatedSocial = {
+    ...(existing?.social_links || {}),
+    telegram: config.telegram_link,
+    telegramBotToken: config.telegram_bot_token,
+    telegramChatId: config.telegram_chat_id,
+    telegramEnabled: config.telegram_enabled,
+    instagram: config.instagram_profile_url,
+    instagramWebhookUrl: config.instagram_webhook_url,
+    instagramEnabled: config.instagram_enabled,
+  };
 
-  // 2. File-system persistence
+  if (existing?.id) {
+    const dbRes = await execSupabaseUpdate(
+      supabase,
+      'nail_business_info',
+      {
+        social_links: updatedSocial,
+        updated_at: new Date().toISOString(),
+      },
+      'id',
+      existing.id
+    );
+    const dbErrMsg = buildDbWriteErrorMessage(dbRes.error, dbRes.affected, 'nail_business_info');
+    if (dbErrMsg) {
+      return dbErrMsg;
+    }
+  } else if (!isTestRuntime() && !isLiveSupabaseConfigured()) {
+    const envErr = buildDbWriteErrorMessage(null, 0, 'nail_business_info');
+    if (envErr) return envErr;
+  }
+
+  // 2. In-memory & local file fallback sync
+  (globalThis as any).__mockNotificationConfig = config;
   saveFileStoredNotifications(config);
 
-  // 3. Update in-memory fallback
   if (FALLBACK_BUSINESS_INFO.socialLinks) {
     (FALLBACK_BUSINESS_INFO.socialLinks as any).telegramEnabled = config.telegram_enabled;
     (FALLBACK_BUSINESS_INFO.socialLinks as any).telegramBotToken = config.telegram_bot_token;
@@ -150,26 +187,5 @@ export async function saveEffectiveNotificationConfig(config: NotificationConfig
     (FALLBACK_BUSINESS_INFO.socialLinks as any).instagram = config.instagram_profile_url;
   }
 
-  // 4. Persistent Supabase write via admin client
-  try {
-    const supabase = await getSupabaseAdminSafe();
-    const { data: existing } = await supabase.from('nail_business_info').select('*').limit(1).maybeSingle();
-    const updatedSocial = {
-      ...(existing?.social_links || {}),
-      telegram: config.telegram_link,
-      telegramBotToken: config.telegram_bot_token,
-      telegramChatId: config.telegram_chat_id,
-      telegramEnabled: config.telegram_enabled,
-      instagram: config.instagram_profile_url,
-      instagramWebhookUrl: config.instagram_webhook_url,
-      instagramEnabled: config.instagram_enabled,
-    };
-
-    if (existing?.id) {
-      await supabase.from('nail_business_info').update({
-        social_links: updatedSocial,
-        updated_at: new Date().toISOString(),
-      }).eq('id', existing.id);
-    }
-  } catch {}
+  return null;
 }

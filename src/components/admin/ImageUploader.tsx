@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, X, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { Upload, X, CheckCircle2, AlertCircle, Sparkles, RefreshCw } from 'lucide-react';
 import { ALLOWED_MIME_TYPES, MAX_FILE_SIZE_BYTES, MAX_GALLERY_SIZE_BYTES } from '@/lib/supabase/storage-constants';
 
 interface ImageUploaderProps {
@@ -14,7 +14,7 @@ interface ImageUploaderProps {
 
 async function optimizeImageForUpload(file: File): Promise<File> {
   // Keep already-compact files untouched for instant upload
-  if (file.size <= 350 * 1024 || typeof window === 'undefined') {
+  if (file.size <= 250 * 1024 || typeof window === 'undefined') {
     return file;
   }
 
@@ -28,32 +28,50 @@ async function optimizeImageForUpload(file: File): Promise<File> {
         image.src = objectUrl;
       });
 
-      const MAX_DIM = 1600;
-      let width = img.naturalWidth || img.width;
-      let height = img.naturalHeight || img.height;
+      const passes = [
+        { maxDim: 1600, quality: 0.82 },
+        { maxDim: 1200, quality: 0.72 },
+        { maxDim: 960, quality: 0.62 },
+      ];
 
-      if (width > MAX_DIM || height > MAX_DIM) {
-        const scale = MAX_DIM / Math.max(width, height);
-        width = Math.max(1, Math.round(width * scale));
-        height = Math.max(1, Math.round(height * scale));
+      let bestBlob: Blob | null = null;
+      const baseName = file.name.replace(/\.[^/.]+$/, '') || 'image';
+
+      for (const pass of passes) {
+        let width = img.naturalWidth || img.width;
+        let height = img.naturalHeight || img.height;
+
+        if (width > pass.maxDim || height > pass.maxDim) {
+          const scale = pass.maxDim / Math.max(width, height);
+          width = Math.max(1, Math.round(width * scale));
+          height = Math.max(1, Math.round(height * scale));
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) break;
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const blob = await new Promise<Blob | null>((resolve) =>
+          canvas.toBlob((b) => resolve(b), 'image/webp', pass.quality)
+        );
+
+        if (blob && blob.size > 0) {
+          if (!bestBlob || blob.size < bestBlob.size) {
+            bestBlob = blob;
+          }
+          // Stop once safely under 1.2 MB (well below Vercel's 4.5 MB serverless limit)
+          if (blob.size <= 1.2 * 1024 * 1024) {
+            break;
+          }
+        }
       }
 
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return file;
-
-      ctx.drawImage(img, 0, 0, width, height);
-
-      const targetMime = file.type === 'image/png' ? 'image/webp' : 'image/webp';
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob((b) => resolve(b), targetMime, 0.82)
-      );
-
-      if (blob && blob.size > 0 && blob.size < file.size) {
-        const baseName = file.name.replace(/\.[^/.]+$/, '');
-        return new File([blob], `${baseName}.webp`, { type: blob.type || 'image/webp' });
+      if (bestBlob && bestBlob.size > 0 && bestBlob.size < file.size) {
+        return new File([bestBlob], `${baseName}.webp`, { type: bestBlob.type || 'image/webp' });
       }
       return file;
     } finally {
@@ -74,6 +92,7 @@ export function ImageUploader({
   const [previewUrl, setPreviewUrl] = useState<string>(currentImageUrl);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [duration, setDuration] = useState<number | null>(null);
@@ -86,17 +105,14 @@ export function ImageUploader({
   const maxSize = bucket === 'gallery' ? MAX_GALLERY_SIZE_BYTES : MAX_FILE_SIZE_BYTES;
   const maxMb = maxSize / (1024 * 1024);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processSelectedFile = async (file: File) => {
     setError(null);
     setSuccess(false);
     setDuration(null);
 
     // Client-side validations
     if (!ALLOWED_MIME_TYPES.includes(file.type as any)) {
-      setError(`Định dạng không hợp lệ (${file.type}). Chỉ chấp nhận JPEG, PNG, WebP.`);
+      setError(`Định dạng không hợp lệ (${file.type || 'không xác định'}). Chỉ chấp nhận JPEG, PNG, WebP.`);
       return;
     }
 
@@ -105,16 +121,15 @@ export function ImageUploader({
       return;
     }
 
-    // Immediate local blob preview for instant visual feedback
+    const previousUrl = previewUrl;
     const localUrl = URL.createObjectURL(file);
     setPreviewUrl(localUrl);
 
-    // Upload to server with progress indicator
     setUploading(true);
     setUploadProgress(35);
     const progressTimer = setInterval(() => {
-      setUploadProgress((p) => (p < 90 ? p + 25 : p));
-    }, 40);
+      setUploadProgress((p) => (p < 90 ? p + 20 : p));
+    }, 60);
 
     try {
       const uploadableFile = await optimizeImageForUpload(file);
@@ -130,9 +145,19 @@ export function ImageUploader({
       clearInterval(progressTimer);
       setUploadProgress(100);
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Upload failed.');
+      const rawText = await res.text();
+      let data: any = null;
+      try {
+        data = rawText ? JSON.parse(rawText) : null;
+      } catch {
+        data = null;
+      }
+
+      if (!res.ok || !data?.success) {
+        if (res.status === 413) {
+          throw new Error('Dung lượng ảnh vượt quá giới hạn máy chủ (4.5 MB). Vui lòng chọn ảnh nhỏ hơn.');
+        }
+        throw new Error(data?.error || `Tải ảnh thất bại (HTTP ${res.status}).`);
       }
 
       setDuration(data.duration_ms || null);
@@ -141,12 +166,46 @@ export function ImageUploader({
       onUploadSuccess(data.url);
     } catch (err: any) {
       clearInterval(progressTimer);
+      setPreviewUrl(previousUrl);
       setError(err.message || 'Tải ảnh lên thất bại.');
     } finally {
+      URL.revokeObjectURL(localUrl);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       setTimeout(() => {
         setUploading(false);
         setUploadProgress(0);
       }, 150);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processSelectedFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!uploading) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (uploading) return;
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (droppedFile) {
+      await processSelectedFile(droppedFile);
     }
   };
 
@@ -165,24 +224,54 @@ export function ImageUploader({
     <div className={`space-y-2 ${className}`}>
       <label className="block text-xs font-medium text-slate-300">{label}</label>
 
-      {/* Upload Box / Preview Area */}
-      <div className="relative border-2 border-dashed border-slate-700 hover:border-slate-600 rounded-xl p-4 bg-slate-900/60 transition-colors">
+      {/* Upload Box / Preview Area with Drag & Drop */}
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`relative border-2 border-dashed rounded-xl p-4 bg-slate-900/60 transition-colors ${
+          isDragging
+            ? 'border-champagne-400 bg-champagne-400/10'
+            : 'border-slate-700 hover:border-slate-600'
+        }`}
+      >
         {previewUrl ? (
-          <div className="relative aspect-video max-h-48 rounded-lg overflow-hidden bg-slate-950 flex items-center justify-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={previewUrl}
-              alt="Asset Preview"
-              className="w-full h-full object-cover rounded-lg"
-            />
-            <button
-              type="button"
-              onClick={handleClear}
-              className="absolute top-2 right-2 p-1.5 rounded-full bg-slate-900/80 hover:bg-slate-900 text-slate-300 hover:text-white transition-colors shadow-sm"
-              title="Gỡ ảnh này"
-            >
-              <X className="w-4 h-4" />
-            </button>
+          <div className="space-y-2.5">
+            <div className="relative aspect-video max-h-48 rounded-lg overflow-hidden bg-slate-950 flex items-center justify-center group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewUrl}
+                alt="Asset Preview"
+                className="w-full h-full object-cover rounded-lg"
+              />
+              <button
+                type="button"
+                onClick={handleClear}
+                className="absolute top-2 right-2 p-1.5 rounded-full bg-slate-900/85 hover:bg-red-600 text-slate-200 hover:text-white transition-colors shadow-sm cursor-pointer"
+                title="Gỡ ảnh này"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-champagne-400 hover:text-slate-950 text-slate-200 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Chọn ảnh mới từ máy</span>
+              </button>
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={handleClear}
+                className="text-[11px] text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
+              >
+                Gỡ ảnh
+              </button>
+            </div>
           </div>
         ) : (
           <div
@@ -221,7 +310,7 @@ export function ImageUploader({
             </div>
             <span className="animate-pulse flex items-center gap-1.5 text-slate-200 text-xs">
               <Sparkles className="w-3.5 h-3.5 text-champagne-400 animate-spin" />
-              Đang tối ưu & lưu ảnh siêu tốc...
+              Đang tối ưu & tải ảnh lên máy chủ...
             </span>
           </div>
         )}
@@ -239,7 +328,7 @@ export function ImageUploader({
         <div className="flex items-center gap-2 text-xs text-emerald-400 mt-1 font-medium">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>
-            Ảnh đã tải lên thành công {duration !== null ? `(xử lý siêu tốc trong ${duration}ms)` : '(< 3ms)'}!
+            Ảnh đã tải lên thành công {duration !== null ? `(${duration}ms)` : ''}! Hãy nhấn Lưu để áp dụng.
           </span>
         </div>
       )}

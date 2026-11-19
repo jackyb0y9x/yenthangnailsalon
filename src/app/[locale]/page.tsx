@@ -14,6 +14,7 @@ import { generateLocalizedMetadata } from '@/lib/seo/metadata';
 import { OpeningStatusBadge } from '@/components/public/OpeningStatusBadge';
 import { AlternatingShowcase, type ShowcaseItem } from '@/components/public/AlternatingShowcase';
 import { FeaturedLookbookSlider } from '@/components/public/FeaturedLookbookSlider';
+import { buildOpeningHoursRows } from '@/lib/cms/opening-hours';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -486,10 +487,16 @@ export default async function HomePage({
               {dict.contact.phoneTitle}
             </span>
             <p className="text-sm">
-              <a href="tel:+61291234567" className="font-serif text-xl font-bold text-salon-950 hover:underline block">
+              <a
+                href={`tel:${(business.phone || '+61 2 9123 4567').replace(/[^+\d]/g, '')}`}
+                className="font-serif text-xl font-bold text-salon-950 hover:underline block"
+              >
                 {business.phone}
               </a>
-              <a href="tel:+61412345678" className="text-sm text-gray-600 hover:underline block font-mono mt-1">
+              <a
+                href={`tel:${(business.mobile || '0412 345 678').replace(/[^+\d]/g, '')}`}
+                className="text-sm text-gray-600 hover:underline block font-mono mt-1"
+              >
                 {business.mobile}
               </a>
             </p>
@@ -502,11 +509,16 @@ export default async function HomePage({
             <span className="text-xs font-bold uppercase tracking-wider text-salon-700 block">
               {dict.contact.hoursTitle}
             </span>
-            <p className="text-sm text-gray-700 leading-relaxed">
-              Mon – Wed: 09:30 – 18:30 <br />
-              Thu (Late): 09:30 – 20:00 <br />
-              Fri – Sat: 09:30 – 19:00 / Sun: 10:00 – 17:00
-            </p>
+            <div className="text-sm text-gray-700 space-y-1">
+              {buildOpeningHoursRows(business.openingHours).map((row) => (
+                <div key={row.key} className="flex justify-between gap-2 text-xs sm:text-sm">
+                  <span className="text-gray-500">{isEn ? row.labelEn : row.labelVi}:</span>
+                  <span className={row.highlight ? 'font-semibold text-salon-900' : 'font-medium text-gray-800'}>
+                    {isEn ? row.hoursTextEn : row.hoursTextVi}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

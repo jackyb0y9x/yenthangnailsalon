@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
         ? {
             is_active: Boolean(data.is_active),
             badge_text: data.badge_text_en || data.badge_text || 'PROMO',
-            message_en: data.content_en || data.title_en || '',
-            message_vi: data.content_vi || data.title_vi || '',
+            message_en: data.content_en || data.message_en || data.title_en || '',
+            message_vi: data.content_vi || data.message_vi || data.title_vi || '',
             link_url: data.link_url || '/services',
           }
         : {

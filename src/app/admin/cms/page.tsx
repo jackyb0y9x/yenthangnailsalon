@@ -77,6 +77,7 @@ function AdminCmsPortalContent() {
     hasAdminKey: boolean;
     hasSupabaseAuthSession?: boolean;
     canWriteToDb?: boolean;
+    missingSupabaseEnv?: boolean;
     isLiveSupabase: boolean;
     isServerless: boolean;
   } | null>(null);
@@ -710,6 +711,24 @@ function AdminCmsPortalContent() {
       </div>
 
       {/* Supabase Database Sync Diagnostic Banner */}
+      {syncStatus && syncStatus.missingSupabaseEnv && (
+        <div className="p-4 rounded-xl border bg-red-950/60 border-red-700/80 text-red-100 flex items-start gap-3 text-xs leading-relaxed">
+          <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-semibold text-red-200">
+              {locale === 'vi'
+                ? 'Vercel chưa được cấu hình kết nối Supabase (Thiếu NEXT_PUBLIC_SUPABASE_URL & NEXT_PUBLIC_SUPABASE_ANON_KEY)'
+                : 'Vercel is missing Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL & NEXT_PUBLIC_SUPABASE_ANON_KEY)'}
+            </p>
+            <p className="text-red-100/90">
+              {locale === 'vi'
+                ? 'Hiện tại website trên Vercel đang chạy ở chế độ dữ liệu mẫu tạm thời nên mọi thay đổi CMS sẽ không lưu được lên cơ sở dữ liệu. Vui lòng vào Vercel → Project Settings → Environment Variables, thêm 2 biến NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY (giống file .env.local), sau đó bấm Redeploy.'
+                : 'This Vercel deployment is running in fallback mock mode because Supabase env vars are missing. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel → Project Settings → Environment Variables, then Redeploy.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {syncStatus && syncStatus.isLiveSupabase && syncStatus.canWriteToDb === false && (
         <div className="p-4 rounded-xl border bg-amber-950/50 border-amber-700/80 text-amber-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs leading-relaxed">
           <div className="flex items-start gap-3">
@@ -876,9 +895,22 @@ function AdminCmsPortalContent() {
             <ImageUploader
               bucket="salon_cms"
               currentImageUrl={heroData.image_url}
-              onUploadSuccess={(url) => setHeroData({ ...heroData, image_url: url })}
+              onUploadSuccess={(url) => setHeroData((prev) => ({ ...prev, image_url: url }))}
               label="Hero Showcase Image (Supabase Storage: salon_cms)"
             />
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-400">
+                {locale === 'vi' ? 'Hoặc dán trực tiếp URL ảnh nền Hero:' : 'Or direct Hero Background Image URL:'}
+              </label>
+              <input
+                type="text"
+                value={heroData.image_url}
+                onChange={(e) => setHeroData((prev) => ({ ...prev, image_url: e.target.value }))}
+                placeholder="https://... hoặc /uploads/..."
+                className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-white focus:border-champagne-400 focus:outline-hidden"
+              />
+            </div>
 
             <button
               type="button"
@@ -1162,7 +1194,7 @@ function AdminCmsPortalContent() {
           {/* Service Add/Edit Modal */}
           {isServiceModalOpen && (
             <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-lg space-y-4 shadow-2xl">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl">
                 <h3 className="text-lg font-serif font-bold text-white">
                   {editingServiceId ? 'Edit Salon Service' : 'Add New Service'}
                 </h3>
@@ -1248,9 +1280,24 @@ function AdminCmsPortalContent() {
                   <ImageUploader
                     bucket="services"
                     currentImageUrl={serviceForm.image_url}
-                    onUploadSuccess={(url) => setServiceForm({ ...serviceForm, image_url: url })}
+                    onUploadSuccess={(url) => setServiceForm((prev) => ({ ...prev, image_url: url }))}
                     label="Service Showcase Image (services bucket)"
                   />
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-slate-400">
+                      {locale === 'vi' ? 'Hoặc dán trực tiếp URL ảnh dịch vụ:' : 'Or direct Service Image URL:'}
+                    </label>
+                    <input
+                      type="text"
+                      value={serviceForm.image_url}
+                      onChange={(e) =>
+                        setServiceForm((prev) => ({ ...prev, image_url: e.target.value }))
+                      }
+                      placeholder="https://... hoặc /uploads/..."
+                      className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-white"
+                    />
+                  </div>
 
                   <div className="flex items-center gap-4 pt-2">
                     <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
@@ -1375,7 +1422,7 @@ function AdminCmsPortalContent() {
           {/* Gallery Upload / Edit Modal */}
           {isGalleryModalOpen && (
             <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl">
                 <h3 className="text-lg font-serif font-bold text-white">
                   {editingGalleryItem
                     ? (locale === 'vi' ? 'Chỉnh Sửa Mẫu Móng' : 'Edit Lookbook Set')
@@ -1447,9 +1494,26 @@ function AdminCmsPortalContent() {
                   <ImageUploader
                     bucket="gallery"
                     currentImageUrl={galleryForm.image_url}
-                    onUploadSuccess={(url) => setGalleryForm({ ...galleryForm, image_url: url })}
+                    onUploadSuccess={(url) => setGalleryForm((prev) => ({ ...prev, image_url: url }))}
                     label={locale === 'vi' ? 'Ảnh Mẫu Móng (gallery bucket - tối đa 8MB)' : 'Nail Set Photo (gallery bucket - up to 8MB)'}
                   />
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-slate-400">
+                      {locale === 'vi'
+                        ? 'Hoặc dán trực tiếp URL hình ảnh mẫu móng:'
+                        : 'Or paste a direct Nail Art Image URL:'}
+                    </label>
+                    <input
+                      type="text"
+                      value={galleryForm.image_url}
+                      onChange={(e) =>
+                        setGalleryForm((prev) => ({ ...prev, image_url: e.target.value }))
+                      }
+                      placeholder="https://... hoặc /uploads/..."
+                      className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-white focus:border-champagne-400 focus:outline-hidden"
+                    />
+                  </div>
 
                   <div className="flex items-center gap-2 pt-2">
                     <input
@@ -1589,26 +1653,40 @@ function AdminCmsPortalContent() {
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                     <span>{t.branding?.titleLabelEn || 'Website Title (English)'}</span>
-                    <span className="text-[10px] text-slate-500 font-mono">EN / Header & Tab</span>
+                    <span className="text-[10px] text-slate-500 font-mono">Hiển thị trên /en</span>
                   </label>
                   <input
                     type="text"
                     value={businessData.website_title}
-                    onChange={(e) => setBusinessData({ ...businessData, website_title: e.target.value })}
+                    onChange={(e) => setBusinessData((prev) => ({ ...prev, website_title: e.target.value }))}
                     placeholder={t.branding?.titlePlaceholderEn || 'Glamour Nails & Beauty Lounge Sydney'}
                     className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:border-champagne-400"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
+                  <label className="text-xs font-medium text-slate-300 flex items-center justify-between gap-2">
                     <span>{t.branding?.titleLabelVi || 'Website Title (Tiếng Việt)'}</span>
-                    <span className="text-[10px] text-slate-500 font-mono">VI / Header & Tab</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setBusinessData((prev) => ({
+                            ...prev,
+                            website_title_vi: prev.website_title || prev.salon_name,
+                          }))
+                        }
+                        className="text-[10px] text-champagne-400 hover:text-champagne-300 underline cursor-pointer"
+                      >
+                        {locale === 'vi' ? 'Chép từ bản EN' : 'Copy from EN'}
+                      </button>
+                      <span className="text-[10px] text-amber-400 font-mono">Hiển thị trên /vi</span>
+                    </div>
                   </label>
                   <input
                     type="text"
                     value={businessData.website_title_vi}
-                    onChange={(e) => setBusinessData({ ...businessData, website_title_vi: e.target.value })}
+                    onChange={(e) => setBusinessData((prev) => ({ ...prev, website_title_vi: e.target.value }))}
                     placeholder={t.branding?.titlePlaceholderVi || 'Glamour Nails Sydney • Chăm Sóc Móng Cao Cấp'}
                     className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:border-champagne-400"
                   />
@@ -1652,7 +1730,7 @@ function AdminCmsPortalContent() {
                   <ImageUploader
                     bucket="salon_cms"
                     currentImageUrl={businessData.logo_url}
-                    onUploadSuccess={(url) => setBusinessData({ ...businessData, logo_url: url })}
+                    onUploadSuccess={(url) => setBusinessData((prev) => ({ ...prev, logo_url: url }))}
                     label={t.branding?.logoUploadBtn || 'Tải Lên Logo Mới'}
                   />
                 </div>

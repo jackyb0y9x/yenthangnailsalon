@@ -7,6 +7,7 @@ import { FALLBACK_GALLERY } from '@/lib/cms/public-data';
 import {
   getSupabaseAdminSafe,
   hasSupabaseAdminCredentials,
+  isLiveSupabaseConfigured,
   isTestRuntime,
   buildDbWriteErrorMessage,
   execSupabaseInsert,
@@ -26,7 +27,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const isLiveDb = isLiveSupabaseConfigured();
     let baseItems: any[] = [];
+    let loadedFromDb = false;
     try {
       const supabase = await getSupabaseAdminSafe();
       const { data } = await supabase
@@ -35,6 +38,7 @@ export async function GET(request: NextRequest) {
         .order('display_order');
       if (data && data.length > 0) {
         baseItems = data;
+        loadedFromDb = isLiveDb;
       }
     } catch {
       // Offline fallback
@@ -51,7 +55,7 @@ export async function GET(request: NextRequest) {
       tags: Array.isArray(d.tags) ? d.tags : [],
     }));
 
-    const gallery = mergeWithStoredGallery(normalized);
+    const gallery = loadedFromDb ? normalized : mergeWithStoredGallery(normalized);
 
     return NextResponse.json({
       success: true,
@@ -128,8 +132,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Keep local test/offline store synced when not backed by live Supabase admin write
-    if (isTestRuntime() || !hasSupabaseAdminCredentials()) {
+    // Keep local test/offline store synced only when not backed by live Supabase Postgres
+    if (isTestRuntime() || !isLiveSupabaseConfigured()) {
       persistNewGalleryItem(newItem);
     }
 

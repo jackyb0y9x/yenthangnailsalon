@@ -5,6 +5,7 @@ import { SocialIconLinks } from '@/components/public/SocialIcons';
 import type { Locale } from '@/lib/i18n/config';
 import type { Messages } from '@/lib/i18n/dictionaries';
 import type { BusinessInfo } from '@/lib/cms/public-data';
+import { buildOpeningHoursRows } from '@/lib/cms/opening-hours';
 
 interface FooterProps {
   locale: Locale;
@@ -195,26 +196,21 @@ export function Footer({ locale, dict, holidayNoticeActive = false, businessInfo
               <span>{dict.footer.openingHours}</span>
             </h4>
             <div className="space-y-1.5 text-xs text-gray-300">
-              <p className="flex justify-between py-1 border-b border-salon-900">
-                <span className="text-gray-400">{isEn ? 'Mon – Wed' : 'Thứ 2 – Thứ 4'}:</span>
-                <span className="font-medium text-white">09:30 – 18:30</span>
-              </p>
-              <p className="flex justify-between py-1 border-b border-salon-900 text-champagne-300 font-semibold">
-                <span>{isEn ? 'Thursday (Late)' : 'Thứ 5 (Mở muộn)'}:</span>
-                <span>09:30 – 20:00</span>
-              </p>
-              <p className="flex justify-between py-1 border-b border-salon-900">
-                <span className="text-gray-400">{isEn ? 'Friday' : 'Thứ 6'}:</span>
-                <span className="font-medium text-white">09:30 – 19:00</span>
-              </p>
-              <p className="flex justify-between py-1 border-b border-salon-900">
-                <span className="text-gray-400">{isEn ? 'Saturday' : 'Thứ 7'}:</span>
-                <span className="font-medium text-white">09:00 – 18:00</span>
-              </p>
-              <p className="flex justify-between py-1 border-b border-salon-900">
-                <span className="text-gray-400">{isEn ? 'Sunday' : 'Chủ Nhật'}:</span>
-                <span className="font-medium text-white">10:00 – 17:00</span>
-              </p>
+              {buildOpeningHoursRows(businessInfo?.openingHours).map((row) => (
+                <p
+                  key={row.key}
+                  className={`flex justify-between py-1 border-b border-salon-900 ${
+                    row.highlight ? 'text-champagne-300 font-semibold' : ''
+                  }`}
+                >
+                  <span className={row.highlight ? '' : 'text-gray-400'}>
+                    {isEn ? row.labelEn : row.labelVi}:
+                  </span>
+                  <span className={row.highlight ? '' : 'font-medium text-white'}>
+                    {isEn ? row.hoursTextEn : row.hoursTextVi}
+                  </span>
+                </p>
+              ))}
               <p className="text-[11px] text-gray-400 pt-1">
                 {dict.hours.timezoneNote}
               </p>
@@ -231,7 +227,7 @@ export function Footer({ locale, dict, holidayNoticeActive = false, businessInfo
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500">
           <p>
-            © {new Date().getFullYear()} {dict.common.brandName}. {dict.footer.rights}
+            © {new Date().getFullYear()} {brandTitle}. {dict.footer.rights}
           </p>
           <p className="flex items-center gap-1.5">
             <span>Boutique Vietnamese Nail Artistry in Sydney</span>

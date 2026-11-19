@@ -6,6 +6,7 @@ import { FALLBACK_GALLERY } from '@/lib/cms/public-data';
 import {
   getSupabaseAdminSafe,
   hasSupabaseAdminCredentials,
+  isLiveSupabaseConfigured,
   isTestRuntime,
   buildDbWriteErrorMessage,
   execSupabaseUpdate,
@@ -73,7 +74,13 @@ export async function PUT(
       updates.category_tag = body.category_tag;
       updates.category = body.category_tag;
     }
-    if (body.image_url !== undefined) updates.image_url = body.image_url;
+    if (body.image_url !== undefined) {
+      updates.image_url = body.image_url;
+      // Always keep thumbnail_url synchronized when replacing image_url unless explicitly provided
+      if (body.thumbnail_url === undefined) {
+        updates.thumbnail_url = body.image_url;
+      }
+    }
     if (body.thumbnail_url !== undefined) updates.thumbnail_url = body.thumbnail_url;
     if (body.tags !== undefined) updates.tags = Array.isArray(body.tags) ? body.tags : [];
     if (body.is_featured !== undefined) updates.is_featured = Boolean(body.is_featured);
@@ -98,7 +105,7 @@ export async function PUT(
       );
     }
 
-    if (isTestRuntime() || !hasSupabaseAdminCredentials()) {
+    if (isTestRuntime() || !isLiveSupabaseConfigured()) {
       persistUpdatedGalleryItem(itemId, merged);
     }
 
@@ -169,7 +176,7 @@ export async function DELETE(
       );
     }
 
-    if (isTestRuntime() || !hasSupabaseAdminCredentials()) {
+    if (isTestRuntime() || !isLiveSupabaseConfigured()) {
       persistDeletedGalleryItem(itemId);
     }
 

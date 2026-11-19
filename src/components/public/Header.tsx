@@ -84,32 +84,32 @@ export function Header({
         )}
 
         {/* Full-bleed edge-to-edge navbar container */}
-        <div className="w-full px-3 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
-          <div className="flex items-center justify-between h-16 sm:h-20 flex-nowrap gap-2 sm:gap-4">
+        <div className="w-full px-3 sm:px-5 lg:px-6 xl:px-8 2xl:px-14">
+          <div className="flex items-center justify-between h-16 sm:h-20 flex-nowrap gap-2 lg:gap-3">
             {/* Salon Brand Identity */}
-            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 shrink lg:shrink-0">
-              <Link href={`/${locale}`} className="group flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 shrink">
+              <Link href={`/${locale}`} className="group flex items-center gap-2 sm:gap-2.5 min-w-0">
                 {logoUrl ? (
-                  <div className="relative h-9 sm:h-12 flex items-center shrink-0">
+                  <div className="relative h-9 sm:h-11 flex items-center shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={logoUrl}
                       alt={brandTitle}
-                      className="h-9 sm:h-12 w-auto max-w-[120px] sm:max-w-[170px] object-contain transition-transform duration-300 group-hover:scale-105 rounded-lg"
+                      className="h-9 sm:h-11 w-auto max-w-[110px] sm:max-w-[140px] object-contain transition-transform duration-300 group-hover:scale-105 rounded-lg"
                     />
                   </div>
                 ) : (
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-salon-900 via-salon-800 to-salon-950 text-champagne-300 flex items-center justify-center shrink-0 shadow-md border border-champagne-400/40 group-hover:scale-105 transition-transform duration-300">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-salon-900 via-salon-800 to-salon-950 text-champagne-300 flex items-center justify-center shrink-0 shadow-md border border-champagne-400/40 group-hover:scale-105 transition-transform duration-300">
                     <Gem className="w-4 h-4 sm:w-5 sm:h-5 text-champagne-300 drop-shadow" />
                   </div>
                 )}
                 <div className="flex flex-col min-w-0">
-                  <span className="font-serif text-base sm:text-xl xl:text-2xl font-bold tracking-tight text-salon-950 group-hover:text-salon-800 transition-colors truncate max-w-[165px] sm:max-w-[260px] lg:max-w-[210px] xl:max-w-[290px] 2xl:max-w-none">
+                  <span className="font-serif text-base sm:text-lg xl:text-xl font-bold tracking-tight text-salon-950 group-hover:text-salon-800 transition-colors truncate max-w-[160px] sm:max-w-[230px] lg:max-w-[180px] xl:max-w-[230px] 2xl:max-w-[320px]">
                     {brandTitle}
                   </span>
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-champagne-500 animate-pulse shrink-0" />
-                    <span className="text-[9px] sm:text-xs text-salon-700 font-sans tracking-widest uppercase font-semibold truncate max-w-[150px] sm:max-w-[240px] lg:max-w-[195px] xl:max-w-none">
+                    <span className="text-[9px] sm:text-[11px] text-salon-700 font-sans tracking-wider uppercase font-semibold truncate max-w-[150px] sm:max-w-[210px] lg:max-w-[170px] xl:max-w-[220px] 2xl:max-w-none">
                       {brandTagline}
                     </span>
                   </div>
@@ -120,7 +120,7 @@ export function Header({
             {/* Desktop Navigation - Centered Floating Pill with Guaranteed No Wrap */}
             <nav
               aria-label={locale === 'vi' ? 'Điều hướng chính' : 'Primary Navigation'}
-              className="hidden lg:flex items-center flex-nowrap shrink-0 gap-0.5 xl:gap-1.5 bg-salon-50/90 backdrop-blur-md px-2.5 py-1.5 rounded-full border border-champagne-300/80 shadow-xs"
+              className="hidden lg:flex items-center flex-nowrap shrink-0 gap-0.5 xl:gap-1 bg-salon-50/90 backdrop-blur-md px-2 py-1.5 rounded-full border border-champagne-300/80 shadow-xs"
             >
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
@@ -128,7 +128,7 @@ export function Header({
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`whitespace-nowrap shrink-0 px-3 py-1.5 xl:px-4 xl:py-2 rounded-full text-xs xl:text-sm font-medium transition-all duration-200 ${
+                    className={`whitespace-nowrap shrink-0 px-2.5 py-1.5 xl:px-3.5 xl:py-2 rounded-full text-xs xl:text-sm font-medium transition-all duration-200 ${
                       isActive
                         ? 'bg-gradient-to-r from-salon-900 via-salon-850 to-salon-950 text-white font-semibold shadow-xs'
                         : 'text-gray-700 hover:text-salon-950 hover:bg-white/80'
@@ -141,7 +141,7 @@ export function Header({
             </nav>
 
             {/* Header Right Actions - Balanced & Guaranteed No Wrap */}
-            <div className="hidden lg:flex items-center flex-nowrap shrink-0 gap-2 xl:gap-3">
+            <div className="hidden lg:flex items-center flex-nowrap shrink-0 gap-1.5 xl:gap-2.5">
               <div className="shrink-0">
                 <SocialIconLinks
                   facebookUrl={facebookUrl}
@@ -159,7 +159,7 @@ export function Header({
               </div>
               <Link
                 href={`/${locale}/contact`}
-                className="shrink-0 whitespace-nowrap inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-salon-900 via-salon-850 to-salon-950 hover:from-salon-800 hover:to-salon-900 text-white px-4 py-2 xl:px-5 xl:py-2.5 text-xs xl:text-sm font-semibold shadow-sm hover:shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] border border-champagne-400/30"
+                className="shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-salon-900 via-salon-850 to-salon-950 hover:from-salon-800 hover:to-salon-900 text-white px-3.5 py-2 xl:px-4 xl:py-2.5 text-xs xl:text-sm font-semibold shadow-sm hover:shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] border border-champagne-400/30"
               >
                 <Sparkles className="w-3.5 h-3.5 text-champagne-300" />
                 <span>{dict.nav.bookNow}</span>

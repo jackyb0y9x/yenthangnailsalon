@@ -7,6 +7,7 @@ import { getPublicServices, getPublicBusinessInfo } from '@/lib/cms/public-data'
 import { generateLocalizedMetadata } from '@/lib/seo/metadata';
 import { ConsultationForm } from '@/components/public/ConsultationForm';
 import { SocialIconLinks } from '@/components/public/SocialIcons';
+import { buildOpeningHoursRows } from '@/lib/cms/opening-hours';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -160,26 +161,21 @@ export default async function ContactPage({
             </h3>
 
             <div className="space-y-2 text-xs text-gray-300">
-              <div className="flex justify-between py-1.5 border-b border-salon-900">
-                <span className="text-gray-400">Monday – Wednesday:</span>
-                <span className="font-semibold text-white">09:30 – 18:30</span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-salon-900 text-champagne-300 font-bold">
-                <span>Thursday (Late Night):</span>
-                <span>09:30 – 20:00</span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-salon-900">
-                <span className="text-gray-400">Friday:</span>
-                <span className="font-semibold text-white">09:30 – 19:00</span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-salon-900">
-                <span className="text-gray-400">Saturday:</span>
-                <span className="font-semibold text-white">09:00 – 18:00</span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-salon-900">
-                <span className="text-gray-400">Sunday:</span>
-                <span className="font-semibold text-white">10:00 – 17:00</span>
-              </div>
+              {buildOpeningHoursRows(business.openingHours).map((row) => (
+                <div
+                  key={row.key}
+                  className={`flex justify-between py-1.5 border-b border-salon-900 ${
+                    row.highlight ? 'text-champagne-300 font-bold' : ''
+                  }`}
+                >
+                  <span className={row.highlight ? '' : 'text-gray-400'}>
+                    {isEn ? row.labelEn : row.labelVi}:
+                  </span>
+                  <span className={row.highlight ? '' : 'font-semibold text-white'}>
+                    {isEn ? row.hoursTextEn : row.hoursTextVi}
+                  </span>
+                </div>
+              ))}
               <p className="text-[11px] text-gray-400 pt-1">
                 {dict.hours.timezoneNote}
               </p>
