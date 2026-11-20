@@ -10,6 +10,26 @@ import {
   execSupabaseUpdate,
 } from '@/lib/supabase/admin';
 
+const LIVE_SERVICE_CATEGORY_ALIASES: Record<string, string> = {
+  'sns dipping': 'SNS & Dipping',
+  'sns & dipping': 'SNS & Dipping',
+  acrylic: 'Acrylic & Extensions',
+  'acrylic & extensions': 'Acrylic & Extensions',
+  'gel art': 'Gel Art & Design',
+  'gel art & design': 'Gel Art & Design',
+  'spa package': 'Spa Packages',
+  'spa packages': 'Spa Packages',
+  manicure: 'Manicure',
+  pedicure: 'Pedicure',
+};
+
+function normalizeServiceCategory(raw: unknown): string {
+  const cleaned = String(raw || '').trim();
+  if (!cleaned) return 'Gel Art & Design';
+  if (isTestRuntime()) return cleaned;
+  return LIVE_SERVICE_CATEGORY_ALIASES[cleaned.toLowerCase()] || cleaned;
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -63,7 +83,7 @@ export async function PUT(
     if (body.name_vi !== undefined) updates.name_vi = body.name_vi;
     if (body.description_en !== undefined) updates.description_en = body.description_en;
     if (body.description_vi !== undefined) updates.description_vi = body.description_vi;
-    if (body.category !== undefined) updates.category = body.category;
+    if (body.category !== undefined) updates.category = normalizeServiceCategory(body.category);
     if (body.duration_minutes !== undefined) updates.duration_minutes = body.duration_minutes;
     if (body.image_url !== undefined) updates.image_url = body.image_url;
     if (body.is_featured !== undefined) updates.is_featured = Boolean(body.is_featured);

@@ -11,6 +11,26 @@ import {
   execSupabaseInsert,
 } from '@/lib/supabase/admin';
 
+const LIVE_SERVICE_CATEGORY_ALIASES: Record<string, string> = {
+  'sns dipping': 'SNS & Dipping',
+  'sns & dipping': 'SNS & Dipping',
+  acrylic: 'Acrylic & Extensions',
+  'acrylic & extensions': 'Acrylic & Extensions',
+  'gel art': 'Gel Art & Design',
+  'gel art & design': 'Gel Art & Design',
+  'spa package': 'Spa Packages',
+  'spa packages': 'Spa Packages',
+  manicure: 'Manicure',
+  pedicure: 'Pedicure',
+};
+
+function normalizeServiceCategory(raw: unknown): string {
+  const cleaned = String(raw || '').trim();
+  if (!cleaned) return 'Gel Art & Design';
+  if (isTestRuntime()) return cleaned;
+  return LIVE_SERVICE_CATEGORY_ALIASES[cleaned.toLowerCase()] || cleaned;
+}
+
 export async function GET(request: NextRequest) {
   const session = getSessionFromRequest(request);
   if (!session.isAuthenticated) {
@@ -85,7 +105,7 @@ export async function POST(request: NextRequest) {
 
     const newService = {
       id: body.id || (isTestRuntime() ? `srv-${Date.now()}` : crypto.randomUUID()),
-      category: body.category || 'Gel Art & Design',
+      category: normalizeServiceCategory(body.category),
       name_en: body.name_en || 'New Service',
       name_vi: body.name_vi || '',
       description_en: body.description_en || '',

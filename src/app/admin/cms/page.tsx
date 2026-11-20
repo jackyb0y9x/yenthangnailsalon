@@ -111,7 +111,7 @@ function AdminCmsPortalContent() {
   const [serviceForm, setServiceForm] = useState({
     name_en: '',
     name_vi: '',
-    category: 'Gel Art',
+    category: 'Gel Art & Design',
     price_aud: 65,
     duration_minutes: 45,
     description_en: '',
@@ -1092,7 +1092,7 @@ function AdminCmsPortalContent() {
                 setServiceForm({
                   name_en: '',
                   name_vi: '',
-                  category: 'Gel Art',
+                  category: 'Gel Art & Design',
                   price_aud: 70,
                   duration_minutes: 50,
                   description_en: '',
@@ -1288,24 +1288,16 @@ function AdminCmsPortalContent() {
                         <option value="Manicure">Manicure</option>
                         <option value="Pedicure">Pedicure</option>
                         <option value="SNS & Dipping">SNS &amp; Dipping</option>
-                        <option value="SNS Dipping">SNS Dipping</option>
                         <option value="Acrylic & Extensions">Acrylic &amp; Extensions</option>
-                        <option value="Acrylic">Acrylic</option>
                         <option value="Gel Art & Design">Gel Art &amp; Design</option>
-                        <option value="Gel Art">Gel Art</option>
                         <option value="Spa Packages">Spa Packages</option>
-                        <option value="Spa Package">Spa Package</option>
                         {![
                           'Manicure',
                           'Pedicure',
                           'SNS & Dipping',
-                          'SNS Dipping',
                           'Acrylic & Extensions',
-                          'Acrylic',
                           'Gel Art & Design',
-                          'Gel Art',
                           'Spa Packages',
-                          'Spa Package',
                         ].includes(serviceForm.category) && serviceForm.category && (
                           <option value={serviceForm.category}>{serviceForm.category}</option>
                         )}
