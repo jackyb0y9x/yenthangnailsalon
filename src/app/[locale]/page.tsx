@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Sparkles, Star, ArrowRight, Clock, Award, Gem, CheckCircle2, MapPin, Navigation, ExternalLink, Compass } from 'lucide-react';
+import { Sparkles, ArrowRight, Clock, Award, Gem, CheckCircle2, MapPin, Navigation, ExternalLink, Compass } from 'lucide-react';
 import { isValidLocale, type Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import {
@@ -14,6 +14,7 @@ import { generateLocalizedMetadata } from '@/lib/seo/metadata';
 import { OpeningStatusBadge } from '@/components/public/OpeningStatusBadge';
 import { AlternatingShowcase, type ShowcaseItem } from '@/components/public/AlternatingShowcase';
 import { FeaturedLookbookSlider } from '@/components/public/FeaturedLookbookSlider';
+import { HeroTrustMetrics } from '@/components/public/HeroTrustMetrics';
 import { buildOpeningHoursRows } from '@/lib/cms/opening-hours';
 
 export const dynamic = 'force-dynamic';
@@ -215,24 +216,12 @@ export default async function HomePage({
             </div>
           </div>
 
-          {/* Luxury Trust Metrics Card with Glassmorphism */}
-          <div className="pt-6 sm:pt-12 grid grid-cols-3 gap-2 sm:gap-6 max-w-3xl mx-auto text-center">
-            <div className="bg-black/35 backdrop-blur-md p-3 sm:p-5 rounded-2xl border border-white/15 shadow-lg">
-              <p className="font-serif text-lg sm:text-3xl font-bold text-champagne-200">15,000+</p>
-              <p className="text-[10px] sm:text-xs text-gray-300 font-medium mt-1 leading-snug">{dict.hero.statClients}</p>
-            </div>
-            <div className="bg-black/35 backdrop-blur-md p-3 sm:p-5 rounded-2xl border border-white/15 shadow-lg">
-              <p className="font-serif text-lg sm:text-3xl font-bold text-champagne-200 flex items-center justify-center gap-1">
-                <span>4.9</span>
-                <Star className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 fill-amber-400 inline" />
-              </p>
-              <p className="text-[10px] sm:text-xs text-gray-300 font-medium mt-1 leading-snug">{dict.hero.statRating}</p>
-            </div>
-            <div className="bg-black/35 backdrop-blur-md p-3 sm:p-5 rounded-2xl border border-white/15 shadow-lg">
-              <p className="font-serif text-lg sm:text-3xl font-bold text-champagne-200">100%</p>
-              <p className="text-[10px] sm:text-xs text-gray-300 font-medium mt-1 leading-snug">{dict.hero.statHygiene}</p>
-            </div>
-          </div>
+          {/* Luxury Trust Metrics Card with Scroll-Triggered Count-Up & Scale-Up Animation */}
+          <HeroTrustMetrics
+            statClientsLabel={dict.hero.statClients}
+            statRatingLabel={dict.hero.statRating}
+            statHygieneLabel={dict.hero.statHygiene}
+          />
         </div>
       </section>
 
