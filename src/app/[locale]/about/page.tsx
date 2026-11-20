@@ -118,23 +118,80 @@ export default async function AboutPage({
     )}&t=&z=16&ie=UTF8&iwloc=&output=embed`;
 
   return (
-    <div className="w-full py-12 md:py-20 space-y-20 sm:space-y-28 overflow-x-hidden">
-      {/* Hero Header */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
-        <div className="inline-flex items-center gap-2 rounded-full bg-salon-50 border border-salon-200 px-3.5 py-1 text-xs text-salon-800 font-medium">
-          <Sparkles className="w-3.5 h-3.5 text-champagne-500" />
-          <span>{storyBadge}</span>
+    <div className="w-full py-10 md:py-16 space-y-16 sm:space-y-24 overflow-x-hidden">
+      {/* 1. Meet Our Master Technicians (First Section on /about) */}
+      <section id="team" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 sm:space-y-12">
+        <div className="text-center max-w-3xl mx-auto space-y-4">
+          <div className="inline-flex items-center gap-2 rounded-full bg-salon-50 border border-salon-200 px-3.5 py-1 text-xs text-salon-800 font-medium">
+            <Sparkles className="w-3.5 h-3.5 text-champagne-500" />
+            <span>{isEn ? 'Master Nail Artisans' : 'Nghệ Nhân Tài Hoa'}</span>
+          </div>
+          <h1 className="font-serif text-4xl sm:text-5xl font-bold text-salon-950 tracking-tight">
+            {dict.about.teamTitle}
+          </h1>
+          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed font-sans">
+            {dict.about.teamSubtitle}
+          </p>
         </div>
-        <h1 className="font-serif text-4xl sm:text-5xl font-bold text-salon-950 tracking-tight">
-          {pageTitle}
-        </h1>
-        <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed font-sans">
-          {pageSubtitle}
-        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          {staffMembers.map((staff, idx) => (
+            <div
+              key={staff.id}
+              className="group rounded-2xl overflow-hidden bg-white border border-gray-200/80 shadow-xs hover:shadow-xl transition-all duration-300"
+            >
+              <div className="aspect-[4/5] overflow-hidden bg-gray-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={staff.image_url}
+                  alt={staff.name}
+                  loading={idx < 4 ? 'eager' : 'lazy'}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+
+              <div className="p-5 space-y-2">
+                <span className="text-[10px] font-bold text-champagne-600 tracking-wider uppercase block">
+                  {isEn ? staff.role_title_en : staff.role_title_vi}
+                </span>
+                <h3 className="font-serif text-lg font-bold text-salon-950">
+                  {staff.name}
+                </h3>
+                <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">
+                  {isEn ? (staff.bio_en || staff.bio_vi || '') : (staff.bio_vi || staff.bio_en || '')}
+                </p>
+
+                <div className="flex flex-wrap gap-1 pt-2">
+                  {staff.specializations.map((spec) => (
+                    <span
+                      key={spec}
+                      className="text-[10px] bg-salon-50 text-salon-800 px-2 py-0.5 rounded-md font-medium"
+                    >
+                      {spec}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
-      {/* Salon Story Section */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* 2. Salon Story Section (Managed via CMS /admin/cms?tab=about-story) */}
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 sm:space-y-12">
+        <div className="text-center max-w-3xl mx-auto space-y-4">
+          <div className="inline-flex items-center gap-2 rounded-full bg-salon-50 border border-salon-200 px-3.5 py-1 text-xs text-salon-800 font-medium">
+            <Sparkles className="w-3.5 h-3.5 text-champagne-500" />
+            <span>{storyBadge}</span>
+          </div>
+          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-salon-950 tracking-tight">
+            {pageTitle}
+          </h2>
+          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed font-sans">
+            {pageSubtitle}
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           <div className="lg:col-span-6 relative">
             <div className="rounded-3xl overflow-hidden shadow-xl border-4 border-white bg-white">
@@ -151,9 +208,9 @@ export default async function AboutPage({
             <span className="text-xs font-bold tracking-widest text-salon-700 uppercase">
               {storyEyebrow}
             </span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-salon-950 leading-tight">
+            <h3 className="font-serif text-3xl sm:text-4xl font-bold text-salon-950 leading-tight">
               {storyTitle}
-            </h2>
+            </h3>
             {storyP1 && (
               <p className="text-sm sm:text-base text-gray-700 leading-relaxed font-sans whitespace-pre-line">
                 {storyP1}
@@ -194,7 +251,7 @@ export default async function AboutPage({
         </div>
       </section>
 
-      {/* Hygiene Section with Exact Anchor #hygiene and Verbatim Text */}
+      {/* 3. Hygiene Section with Exact Anchor #hygiene and Verbatim Text */}
       <section
         id="hygiene"
         className="w-full bg-salon-950 text-white py-16 md:py-24 border-y border-salon-900"
@@ -256,61 +313,7 @@ export default async function AboutPage({
         </div>
       </section>
 
-      {/* Meet Our Master Technicians */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-        <div className="text-center max-w-2xl mx-auto space-y-3">
-          <span className="text-xs font-semibold tracking-widest text-salon-700 uppercase block">
-            {dict.about.teamTitle}
-          </span>
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-salon-950">
-            {dict.about.teamSubtitle}
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {staffMembers.map((staff) => (
-            <div
-              key={staff.id}
-              className="group rounded-2xl overflow-hidden bg-white border border-gray-200/80 shadow-xs hover:shadow-xl transition-all duration-300"
-            >
-              <div className="aspect-[4/5] overflow-hidden bg-gray-100">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={staff.image_url}
-                  alt={staff.name}
-                  loading="lazy"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-              </div>
-
-              <div className="p-5 space-y-2">
-                <span className="text-[10px] font-bold text-champagne-600 tracking-wider uppercase block">
-                  {isEn ? staff.role_title_en : staff.role_title_vi}
-                </span>
-                <h3 className="font-serif text-lg font-bold text-salon-950">
-                  {staff.name}
-                </h3>
-                <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">
-                  {isEn ? (staff.bio_en || staff.bio_vi || '') : (staff.bio_vi || staff.bio_en || '')}
-                </p>
-
-                <div className="flex flex-wrap gap-1 pt-2">
-                  {staff.specializations.map((spec) => (
-                    <span
-                      key={spec}
-                      className="text-[10px] bg-salon-50 text-salon-800 px-2 py-0.5 rounded-md font-medium"
-                    >
-                      {spec}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Interactive Location & Google Map Section */}
+      {/* 4. Interactive Location & Google Map Section */}
       <section id="location-map" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         <div className="text-center max-w-3xl mx-auto space-y-3">
           <div className="inline-flex items-center gap-2 rounded-full bg-salon-50 border border-salon-200 px-3.5 py-1 text-xs text-salon-800 font-semibold tracking-wider uppercase">
