@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Sparkles, ArrowRight, Clock, Award, Gem, CheckCircle2, MapPin, Navigation, ExternalLink, Compass } from 'lucide-react';
+import { Sparkles, ArrowRight, Clock, Award, Gem, CheckCircle2, MapPin, Navigation, ExternalLink, Compass, ShieldCheck, Flame, Trash2, Droplets } from 'lucide-react';
 import { isValidLocale, type Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import {
@@ -131,7 +131,7 @@ export default async function HomePage({
   });
 
   return (
-    <div className="w-full pb-16 sm:pb-20 overflow-x-hidden">
+    <div className="w-full overflow-x-hidden">
       {/* Emergency Holiday Notice if active */}
       {business.holidayNoticeActive && (
         <div className="holiday-notice-banner w-full bg-amber-50 border-b border-amber-200 px-4 py-3.5 text-center text-amber-900 text-sm font-semibold flex items-center justify-center gap-2 shadow-xs">
@@ -421,7 +421,7 @@ export default async function HomePage({
       </section>
 
       {/* Full-Bleed Contact & Hours Sanctuary Card */}
-      <section className="w-full px-4 sm:px-8 lg:px-16 2xl:px-24 pt-10 sm:pt-14">
+      <section className="w-full px-4 sm:px-8 lg:px-16 2xl:px-24 py-10 sm:py-14">
         <div className="rounded-3xl bg-white border border-champagne-200/80 p-8 sm:p-12 lg:p-14 shadow-md grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
           <div className="space-y-3">
             <span className="text-xs font-bold uppercase tracking-wider text-salon-700 block">
@@ -478,6 +478,65 @@ export default async function HomePage({
                   </span>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Hygiene & Safety Guarantee Banner (Placed Directly Above Footer) */}
+      <section
+        id="hygiene-guarantee"
+        className="w-full bg-gradient-to-b from-salon-900 via-salon-950 to-salon-950 text-white py-12 sm:py-16 border-t border-champagne-400/25"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-10">
+          <div className="text-center max-w-3xl mx-auto space-y-3">
+            <span className="inline-flex items-center gap-2 rounded-full bg-salon-900/90 border border-champagne-400/30 px-4 py-1.5 text-xs text-champagne-300 uppercase tracking-widest font-semibold shadow-xs">
+              <ShieldCheck className="w-4 h-4 text-champagne-300" />
+              <span>{isEn ? 'Hospital-Grade Standards' : 'Chuẩn Y Khoa Nghiêm Ngặt'}</span>
+            </span>
+            <h2 className="font-serif text-2xl sm:text-4xl font-bold tracking-tight text-white leading-tight">
+              {dict.about.hygieneTitle}
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            {/* Pillar 1: 134°C Autoclave */}
+            <div className="rounded-2xl p-6 sm:p-8 bg-salon-900/60 hover:bg-salon-900/80 border border-salon-800/80 hover:border-champagne-400/40 transition-all duration-300 space-y-4 shadow-md">
+              <div className="w-12 h-12 rounded-xl bg-champagne-400/10 text-champagne-300 flex items-center justify-center border border-champagne-400/25">
+                <Flame className="w-6 h-6" />
+              </div>
+              <h3 className="font-serif text-lg sm:text-xl font-bold text-white">
+                {dict.about.hygienePillar1Title}
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-300 leading-relaxed font-sans">
+                {dict.about.hygienePillar1Desc}
+              </p>
+            </div>
+
+            {/* Pillar 2: 100% Single-Use Disposables */}
+            <div className="rounded-2xl p-6 sm:p-8 bg-salon-900/60 hover:bg-salon-900/80 border border-salon-800/80 hover:border-champagne-400/40 transition-all duration-300 space-y-4 shadow-md">
+              <div className="w-12 h-12 rounded-xl bg-champagne-400/10 text-champagne-300 flex items-center justify-center border border-champagne-400/25">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <h3 className="font-serif text-lg sm:text-xl font-bold text-white">
+                {dict.about.hygienePillar2Title}
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-300 leading-relaxed font-sans">
+                {dict.about.hygienePillar2Desc}
+              </p>
+            </div>
+
+            {/* Pillar 3: Non-Toxic & MMA-Free */}
+            <div className="rounded-2xl p-6 sm:p-8 bg-salon-900/60 hover:bg-salon-900/80 border border-salon-800/80 hover:border-champagne-400/40 transition-all duration-300 space-y-4 shadow-md">
+              <div className="w-12 h-12 rounded-xl bg-champagne-400/10 text-champagne-300 flex items-center justify-center border border-champagne-400/25">
+                <Droplets className="w-6 h-6" />
+              </div>
+              <h3 className="font-serif text-lg sm:text-xl font-bold text-white">
+                {dict.about.hygienePillar3Title}
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-300 leading-relaxed font-sans">
+                {dict.about.hygienePillar3Desc}
+              </p>
             </div>
           </div>
         </div>
