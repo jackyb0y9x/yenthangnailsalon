@@ -1116,52 +1116,80 @@ function AdminCmsPortalContent() {
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-slate-950/80 text-slate-400 border-b border-slate-800 uppercase font-mono tracking-wider">
                   <tr>
-                    <th className="px-4 py-3">{locale === 'vi' ? 'Ảnh' : 'Image'}</th>
-                    <th className="px-4 py-3">{locale === 'vi' ? 'Danh Mục' : 'Category'}</th>
-                    <th className="px-4 py-3">{locale === 'vi' ? 'Tên Dịch Vụ (EN / VI)' : 'Service Name (EN / VI)'}</th>
-                    <th className="px-4 py-3">{locale === 'vi' ? 'Giá AUD (gồm GST)' : 'Price AUD (inc. GST)'}</th>
-                    <th className="px-4 py-3">{locale === 'vi' ? 'Thời Lượng' : 'Duration'}</th>
-                    <th className="px-4 py-3">{locale === 'vi' ? 'Trạng Thái' : 'Status'}</th>
-                    <th className="px-4 py-3 text-right">{locale === 'vi' ? 'Thao Tác' : 'Actions'}</th>
+                    <th className="px-4 py-3.5">{locale === 'vi' ? 'Hình Ảnh' : 'Image'}</th>
+                    <th className="px-4 py-3.5">{locale === 'vi' ? 'Dịch Vụ & Mô Tả (VI / EN)' : 'Service & Description'}</th>
+                    <th className="px-4 py-3.5">{locale === 'vi' ? 'Danh Mục' : 'Category'}</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">{locale === 'vi' ? 'Giá AUD' : 'Price AUD'}</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">{locale === 'vi' ? 'Thời Lượng' : 'Duration'}</th>
+                    <th className="px-4 py-3.5">{locale === 'vi' ? 'Trạng Thái' : 'Status'}</th>
+                    <th className="px-4 py-3.5 text-right">{locale === 'vi' ? 'Thao Tác' : 'Actions'}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
-                  {services.map((s) => (
-                    <tr key={s.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="px-4 py-3">
-                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-950 border border-slate-800 shrink-0 flex items-center justify-center">
+                <tbody className="divide-y divide-slate-800/80">
+                  {services.map((s) => {
+                    const descText =
+                      locale === 'vi'
+                        ? (s.description_vi || s.description_en || '')
+                        : (s.description_en || s.description_vi || '');
+
+                    return (
+                    <tr key={s.id} className="group hover:bg-slate-800/40 transition-colors align-middle">
+                      <td className="px-4 py-3.5 w-[124px] sm:w-[144px]">
+                        <div className="w-24 h-16 sm:w-28 sm:h-20 rounded-xl overflow-hidden bg-slate-950 border border-slate-700/80 shadow-md shrink-0 flex items-center justify-center">
                           {s.image_url ? (
                             /* eslint-disable-next-line @next/next/no-img-element */
                             <img
                               src={s.image_url}
                               alt={s.name_en}
-                              className="w-full h-full object-cover"
+                              loading="lazy"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />
                           ) : (
-                            <ImageIcon className="w-4 h-4 text-slate-600" />
+                            <div className="flex flex-col items-center justify-center text-slate-600 gap-1">
+                              <ImageIcon className="w-5 h-5" />
+                              <span className="text-[9px]">{locale === 'vi' ? 'Chưa có ảnh' : 'No image'}</span>
+                            </div>
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-800 text-champagne-300 font-medium">
-                          {s.category}
-                        </span>
-                        {s.is_featured && (
-                          <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-amber-950/70 text-amber-300 border border-amber-800/60 font-medium">
-                            <Star className="w-2.5 h-2.5 fill-amber-400" />
-                            {locale === 'vi' ? 'Trang chủ' : 'Featured'}
-                          </span>
+                      <td className="px-4 py-3.5 min-w-[230px] max-w-md">
+                        <p className="font-semibold text-white text-sm leading-snug">
+                          {locale === 'vi' ? (s.name_vi || s.name_en) : s.name_en}
+                        </p>
+                        {locale === 'vi' && s.name_en && s.name_vi && (
+                          <p className="text-[11px] text-champagne-300/80 mt-0.5">{s.name_en}</p>
+                        )}
+                        {locale !== 'vi' && s.name_vi && (
+                          <p className="text-[11px] text-champagne-300/80 mt-0.5">{s.name_vi}</p>
+                        )}
+                        {descText ? (
+                          <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2 mt-1.5">
+                            {descText}
+                          </p>
+                        ) : (
+                          <p className="text-[11px] text-slate-600 italic mt-1">
+                            {locale === 'vi' ? 'Chưa có mô tả dịch vụ' : 'No description yet'}
+                          </p>
                         )}
                       </td>
-                      <td className="px-4 py-3">
-                        <p className="font-semibold text-white text-sm">{s.name_en}</p>
-                        {s.name_vi && <p className="text-[11px] text-slate-400">{s.name_vi}</p>}
+                      <td className="px-4 py-3.5">
+                        <div className="flex flex-col items-start gap-1.5">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-champagne-300 font-medium whitespace-nowrap">
+                            {s.category}
+                          </span>
+                          {s.is_featured && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-amber-950/70 text-amber-300 border border-amber-800/60 font-medium whitespace-nowrap">
+                              <Star className="w-2.5 h-2.5 fill-amber-400" />
+                              {locale === 'vi' ? 'Trang chủ' : 'Featured'}
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-4 py-3 font-mono font-semibold text-white">
+                      <td className="px-4 py-3.5 font-mono font-semibold text-white whitespace-nowrap">
                         ${Number(s.price_aud || s.price_cents / 100).toFixed(2)} AUD
                       </td>
-                      <td className="px-4 py-3 text-slate-400">{s.duration_minutes} mins</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3.5 text-slate-400 whitespace-nowrap">{s.duration_minutes} mins</td>
+                      <td className="px-4 py-3.5 whitespace-nowrap">
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
                             s.is_active
@@ -1172,7 +1200,7 @@ function AdminCmsPortalContent() {
                           {s.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right space-x-2">
+                      <td className="px-4 py-3.5 text-right space-x-2 whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => {
@@ -1206,7 +1234,8 @@ function AdminCmsPortalContent() {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
